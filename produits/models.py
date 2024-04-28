@@ -1,9 +1,12 @@
 import uuid
 from django.db import models
 
+from authentification.models import Entreprise
+
 
 class Produit(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    entreprise = models.ForeignKey(Entreprise, on_delete=models.CASCADE , null=True)
     nom_produit = models.CharField(max_length=50)
     description = models.TextField()  # richtext
     image_presentation = models.ImageField()

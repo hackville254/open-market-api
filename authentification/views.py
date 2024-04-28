@@ -3,8 +3,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 
 from ninja.errors import HttpError
+
+from banque.models import CompteBancaire
 from .code import generer_code
-from .models import Compte, Entreprise
+from .models import Entreprise
 from .schemas import EntrepriseSchema, LoginSchemas, RegisterSchemas
 from .token import create_token, verify_token
 
@@ -137,8 +139,7 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
         else:
             new_company = Entreprise.objects.create(
                 **data.dict(), user=u, logo=logo)
-            Compte.objects.create(entreprise=new_company, numero_de_compte=generer_code(
-            ), operation='création de votre compte')
+            CompteBancaire.objects.create(entreprise=new_company)
             return {"message": "Entreprise créée avec succès", "entreprise": EntrepriseSchema.from_orm(new_company)}
 
 

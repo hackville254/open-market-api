@@ -7,9 +7,10 @@ from datetime import datetime
 
 
 class ProduitSchema(ModelSchema):
+    entreprise:str
     class Meta:
         model = Produit
-        exclude = ['id', 'image_presentation', 'date_modification', 'date']
+        exclude = ['id', 'image_presentation', 'date_modification','entreprise', 'date']
 
 
 class ProduitNumeriqueSchema(ProduitSchema):

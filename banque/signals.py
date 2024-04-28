@@ -3,7 +3,7 @@ from django.dispatch import receiver
 import uuid
 from datetime import datetime
 
-from banque.models import CompteBancaire
+from .models import CompteBancaire
 
 
 @receiver(pre_save, sender=CompteBancaire)
@@ -11,7 +11,7 @@ def generate_numero_compte(sender, instance, **kwargs):
     if not instance.numero_compte:
         last_compte = CompteBancaire.objects.order_by('-id').first()
         if last_compte:
-            last_id = int(last_compte.numero_compte[3:])
+            last_id = int(last_compte.numero_compte[6:])
             new_id = last_id + 1
         else:
             new_id = 1
@@ -19,3 +19,10 @@ def generate_numero_compte(sender, instance, **kwargs):
         uuid_str = str(uuid.uuid4())[:5]
         uuid_str1 = str(uuid.uuid4())[:3]
         instance.numero_compte = f"OPM{uuid_str1}{new_id:04d}{date_enregistrement}{uuid_str}"
+        
+        
+# date_enregistrement = datetime.now().strftime('%Y%m%d')
+# uuid_str = str(uuid.uuid4())[:5]
+# uuid_str1 = str(uuid.uuid4())[:3]
+
+# print("OPM"+uuid_str1+"01"+'d'+date_enregistrement+uuid_str)

@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from authentification.models import Entreprise
@@ -6,10 +7,13 @@ from authentification.models import Entreprise
 
 
 class CompteBancaire(models.Model):
-    proprietaire = models.ForeignKey(Entreprise, on_delete=models.CASCADE)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    entreprise = models.ForeignKey(Entreprise, on_delete=models.CASCADE)
     numero_compte = models.CharField(max_length=20)
-    solde = models.FloatField()
+    numero_operateur = models.CharField(max_length=20)
+    solde = models.FloatField(default=0)
     bloque = models.BooleanField(default=False)
+    supprime = models.BooleanField(default=False)
     date_modification = models.DateTimeField(auto_now=True)
     date = models.DateTimeField(auto_now_add=True)
     class Meta:
@@ -18,9 +22,12 @@ class CompteBancaire(models.Model):
 
 
 class Transaction(models.Model):
-    montant = models.FloatField()
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    compte_destination = models.ForeignKey(CompteBancaire, related_name='transactions_destination', on_delete=models.CASCADE)
+    montant = models.FloatField()
+    compte_destination = models.ForeignKey(CompteBancaire, related_name='transactions_destination', on_delete=models.CASCADE , null=True)
+    compte_source = models.ForeignKey(CompteBancaire, related_name='transactions_source', on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Transaction'

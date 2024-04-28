@@ -1,5 +1,8 @@
 from ninja import Router, UploadedFile, Form, File
 from typing import List
+
+from authentification.models import Entreprise
+from authentification.token import verify_token
 from ..models import Acce, Fichier, Livre, ProduitNumerique
 from ..schemas import ModifyProduitDigitalSCHEMA, ProduitNumeriqueSchema, LivreSchema, AccesSchema
 from typing import List, Optional
@@ -17,8 +20,11 @@ router = Router()
 @router.post('produit_numerique')
 def ajouter_produit_numerique(request, data: Form[ProduitNumeriqueSchema], image: UploadedFile, fichiers: List[UploadedFile]):
     token = request.headers.get("Authorization").split(" ")[1]
+    payload = verify_token(token)
+    e = Entreprise.object.get(id = payload['entreprise_id'])
     produit = ProduitNumerique.objects.create(
         nom_produit=data.nom_produit,
+        entreprise = e,
         description=data.description,
         image_presentation=image,
         gratuit=data.gratuit,

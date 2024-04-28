@@ -1,5 +1,8 @@
 from ninja import Router, UploadedFile, Form, File
 from typing import List
+
+from authentification.models import Entreprise
+from authentification.token import verify_token
 from ..models import Acce, Fichier, Livre
 from ..schemas import LivreSchema, AccesSchema, ModifyLivre
 from typing import List, Optional
@@ -9,8 +12,12 @@ router = Router()
 
 @router.post('livres')
 def ajouer_un_livre(request, data: Form[LivreSchema], image: UploadedFile, fichiers: List[UploadedFile]):
+    token = request.headers.get("Authorization").split(" ")[1]
+    payload = verify_token(token)
+    e = Entreprise.object.get(id = payload['entreprise_id'])
     livre = Livre.objects.create(
         nom_produit=data.nom_produit,
+        entreprise = e,
         description=data.description,
         image_presentation=image,
         gratuit=data.gratuit,
