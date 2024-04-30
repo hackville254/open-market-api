@@ -20,14 +20,15 @@ def get_compte(request, compte_id: str):
         - type : str
         - description: L'identifiant unique du compte bancaire.
     """
-    compte = CompteBancaire.objects.get(
-        id=compte_id, supprime=False, bloque=False)
-    return {"compte": compte}
+    compte = list(CompteBancaire.objects.filter(
+        id=compte_id, supprime=False, bloque=False).values('id', 'entreprise__nom_entreprise', 'numero_compte', 'numero_operateur', 'solde', 'bloque', 'supprime', 'date_modification', 'date'))
+    return compte
+
 
 
 # Endpoint pour mettre à jour un compte existant
 @router.post("/comptes/{compte_id}")
-def update_compte(request, compte_id: str, compte: CompteBancaireShema):
+def update_compte(request, compte_id: str, data: CompteBancaireShema):
     """
     **Endpoint pour mettre à jour un compte existant.**
     **Permet de mettre à jour les détails d'un compte bancaire existant en fonction de son identifiant.**
@@ -40,7 +41,8 @@ def update_compte(request, compte_id: str, compte: CompteBancaireShema):
         - type: CompteBancaire
         - description: Les nouveaux détails du compte bancaire.
     """
-    compte.numero_operateur = compte.numero_operateur
+    compte = CompteBancaire.objects.get(id = compte_id)
+    compte.numero_operateur = data.numero_operateur
     compte.save()
     return {"status": 200}
 

@@ -46,6 +46,7 @@ class LoginSchemas(Schema):
 
 class EntrepriseSchema(ModelSchema):
     email: str
+    numero_operateur:str
     class Meta:
         model = Entreprise
         exclude = ['id', 'user', 'supprime',

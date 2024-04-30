@@ -124,7 +124,8 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
           - description: Secteur d'activité de l'entreprise.
     """
     token = request.headers.get("Authorization").split(" ")[1]
-    user_id = verify_token(token)
+    payload = verify_token(token)
+    user_id = payload.get('user_id')
     u = User.objects.filter(id=user_id).first()
     if u:
         # Check if the company already exists
@@ -139,7 +140,7 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
         else:
             new_company = Entreprise.objects.create(
                 **data.dict(), user=u, logo=logo)
-            CompteBancaire.objects.create(entreprise=new_company)
+            CompteBancaire.objects.create(entreprise=new_company,numero_operateur = data.numero_operateur)
             return {"message": "Entreprise créée avec succès", "entreprise": EntrepriseSchema.from_orm(new_company)}
 
 
@@ -159,9 +160,10 @@ def getUser(request):
           - description: Jeton d'authentification de l'utilisateur."""
     try:
         token = request.headers.get("Authorization").split(" ")[1]
-        user_id = verify_token(token)
+        payload = verify_token(token)
+        user_id = payload.get('user_id')
         u = list(User.objects.filter(id=user_id).values(
-            "first_name", "username", "is_active", "id"))
+            "id", "username", "is_active", "first_name"))
         return u
 
     except:
@@ -184,9 +186,19 @@ def getEntreprise(request):
           - description: Jeton d'authentification de l'utilisateur."""
     try:
         token = request.headers.get("Authorization").split(" ")[1]
-        user_id = verify_token(token)
-        u = User.objects.filter(id=user_id).first()
-        e = list(Entreprise.objects.filter(user=u).values())
-        return e
-    except:
-        raise HttpError(status_code=404, message="veillez vous connectez svp")
+        payload = verify_token(token)
+        user_id = payload.get('user_id')
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            raise HttpError(404, "Utilisateur non trouvé.")
+
+        entreprise = list(Entreprise.objects.filter(user=user).values())
+        if not entreprise:
+            raise HttpError(404, "Aucune entreprise associée à cet utilisateur.")
+
+        return entreprise
+    except HttpError as e:
+        raise e
+    except Exception as e:
+        raise HttpError(500, "Une erreur s'est produite lors de la récupération des données de l'entreprise.")
+   

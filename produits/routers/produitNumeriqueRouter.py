@@ -1,5 +1,6 @@
 from ninja import Router, UploadedFile, Form, File
 from typing import List
+from ninja.errors import HttpError
 
 from authentification.models import Entreprise
 from authentification.token import verify_token
@@ -21,7 +22,7 @@ router = Router()
 def ajouter_produit_numerique(request, data: Form[ProduitNumeriqueSchema], image: UploadedFile, fichiers: List[UploadedFile]):
     token = request.headers.get("Authorization").split(" ")[1]
     payload = verify_token(token)
-    e = Entreprise.object.get(id = payload['entreprise_id'])
+    e = Entreprise.object.get(id = payload.get('entreprise_id'))
     produit = ProduitNumerique.objects.create(
         nom_produit=data.nom_produit,
         entreprise = e,
@@ -48,53 +49,68 @@ def ajouter_produit_numerique(request, data: Form[ProduitNumeriqueSchema], image
 
 @router.post('/modifier_produit_numerique/{produit_id}')
 def modifier_produit_numerique(request, produit_id: str, data: Form[ModifyProduitDigitalSCHEMA], fileId: Optional[List[str]] = None, image: UploadedFile = None, fichiers: List[UploadedFile] = None):
-    # Récupérer le produit numérique à modifier par son identifiant
-    # Si des données sont fournies, les mettre à jour
-    produit = ProduitNumerique.objects.get(id=id)
-    print(data)
-    if data:
-        # Parcourir tous les champs du modèle
-        for attr, value in data.dict().items():
-            # Vérifier si la nouvelle valeur est différente de la valeur existante et si elle n'est pas nulle
-            if value is not None and getattr(produit, attr) != value:
-                setattr(produit, attr, value)
-    # Si une nouvelle image est fournie, la mettre à jour
-    if image:
-        produit.image_presentation = image
+    try:
+        # Récupérer le produit numérique à modifier par son identifiant
+        # Si des données sont fournies, les mettre à jour
+        produit = ProduitNumerique.objects.get(id=id)
+        print(data)
+        if data:
+            # Parcourir tous les champs du modèle
+            for attr, value in data.dict().items():
+                # Vérifier si la nouvelle valeur est différente de la valeur existante et si elle n'est pas nulle
+                if value is not None and getattr(produit, attr) != value:
+                    setattr(produit, attr, value)
+        # Si une nouvelle image est fournie, la mettre à jour
+        if image:
+            produit.image_presentation = image
 
-    # Enregistrer les modifications dans la base de données
-    produit.save()
+        # Enregistrer les modifications dans la base de données
+        produit.save()
 
-    # Si des nouveaux fichiers sont fournis, les associer au produit
-    if fichiers:
-        for fileId, f in zip(data.fileId, fichiers):
-            if fileId:  # S'il existe un fileId, mettre à jour le fichier existant
-                # Recherche du fichier existant par son fileId et l'associer au produit
-                fichier_exist = Fichier.objects.get(id=fileId)
-                fichier_exist.fichier = f
-                fichier_exist.save()
-            else:  # Sinon, créer un nouveau fichier et l'associer au produit
-                Fichier.objects.create(produit=produit, fichier=f)
+        # Si des nouveaux fichiers sont fournis, les associer au produit
+        if fichiers:
+            for fileId, f in zip(data.fileId, fichiers):
+                if fileId:  # S'il existe un fileId, mettre à jour le fichier existant
+                    # Recherche du fichier existant par son fileId et l'associer au produit
+                    fichier_exist = Fichier.objects.get(id=fileId)
+                    fichier_exist.fichier = f
+                    fichier_exist.save()
+                else:  # Sinon, créer un nouveau fichier et l'associer au produit
+                    Fichier.objects.create(produit=produit, fichier=f)
 
-    # Retourner une réponse HTTP 200 OK
-    return 200
+        # Retourner une réponse HTTP 200 OK
+        return 200
+    except ProduitNumerique.DoesNotExist:
+        raise HttpError(404, "Produit numérique non trouvé.")
+    except Exception as e:
+        raise HttpError(500, "Une erreur s'est produite lors de la modification du produit numérique.")
 
 # recuperer un produit numerique ave son <<id>>
 
 
 @router.get('get_produit_numerique/{produit_id}')
 def recuperer_produit_numerique(request, produit_id: str):
-    produit = list(ProduitNumerique.objects.filter(
-        id=produit_id, supprime=False).values())
-    return produit
+    try:
+        produit = list(ProduitNumerique.objects.filter(
+            id=produit_id, supprime=False).values())
+        return produit
+    except ProduitNumerique.DoesNotExist:
+        raise HttpError(404, "Produit numérique non trouvé.")
+    except Exception as e:
+        raise HttpError(500, "Une erreur s'est produite lors de la récupération du produit numérique.")
 
 # supprimer un produit numerique ave son <<id>>
 
 
 @router.delete('delete_produit_numerique/{produit_id}')
 def supprimer_produit_numerique(request, produit_id: str):
-    produit = ProduitNumerique.objects.get(id=produit_id)
-    produit.supprime = True
-    produit.save()
-    return 200
+    try:
+        produit = ProduitNumerique.objects.get(id=produit_id)
+        produit.supprime = True
+        produit.save()
+        return 200
+    except ProduitNumerique.DoesNotExist:
+        raise HttpError(404, "Produit numérique non trouvé.")
+    except Exception as e:
+        raise HttpError(500, "Une erreur s'est produite lors de la suppression du produit numérique.")
 

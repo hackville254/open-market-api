@@ -9,7 +9,7 @@ class Entreprise(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     nom_entreprise = models.CharField(max_length=150)
     description = models.TextField(("Description de l'entreprise"))
-    logo = models.ImageField()
+    logo = models.ImageField(upload_to='logo_entreprise')
     pays = models.CharField(max_length=50)
     ville = models.CharField(max_length=50)
     numero = models.CharField(max_length=50)
@@ -20,6 +20,10 @@ class Entreprise(models.Model):
     supprime = models.BooleanField(default=False)
     date_modification = models.DateTimeField(auto_now=False, auto_now_add=True)
     date = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.nom_entreprise
+    
 
     class Meta:
         verbose_name = 'Entreprise'

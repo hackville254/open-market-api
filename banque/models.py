@@ -9,13 +9,17 @@ from authentification.models import Entreprise
 class CompteBancaire(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     entreprise = models.ForeignKey(Entreprise, on_delete=models.CASCADE)
-    numero_compte = models.CharField(max_length=20)
+    numero_compte = models.CharField(max_length=25)
     numero_operateur = models.CharField(max_length=20)
     solde = models.FloatField(default=0)
     bloque = models.BooleanField(default=False)
     supprime = models.BooleanField(default=False)
     date_modification = models.DateTimeField(auto_now=True)
     date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.entreprise.nom_entreprise
+    
     class Meta:
         verbose_name = 'Compte Bancaire'
         verbose_name_plural = 'Comptes Bancaires'

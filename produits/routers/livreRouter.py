@@ -1,5 +1,6 @@
 from ninja import Router, UploadedFile, Form, File
 from typing import List
+from ninja.errors import HttpError
 
 from authentification.models import Entreprise
 from authentification.token import verify_token
@@ -14,7 +15,7 @@ router = Router()
 def ajouer_un_livre(request, data: Form[LivreSchema], image: UploadedFile, fichiers: List[UploadedFile]):
     token = request.headers.get("Authorization").split(" ")[1]
     payload = verify_token(token)
-    e = Entreprise.object.get(id = payload['entreprise_id'])
+    e = Entreprise.object.get(id = payload.get('entreprise_id'))
     livre = Livre.objects.create(
         nom_produit=data.nom_produit,
         entreprise = e,
