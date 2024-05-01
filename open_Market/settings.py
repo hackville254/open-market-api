@@ -37,15 +37,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'authentification',
     'produits',
     'banque',
 
 ]
 
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -54,6 +57,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'open_Market.urls'
+CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:3004","http://192.168.1.169:3004"]
 
 TEMPLATES = [
     {

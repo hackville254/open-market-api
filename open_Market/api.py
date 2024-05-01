@@ -20,7 +20,7 @@ app = NinjaAPI(
     version="1.0.0",
     auth=GlobalAuth(),
 )
-app.add_router("authentification/",AuthRouter,tags=["Authentification"])
+app.add_router("authenticate/",AuthRouter,tags=["Authentification"])
 app.add_router("/", produitRouter, tags=["PRODUIT NUMERIQUE"])
 app.add_router("/", livreRouter, tags=["LIVRE,EBOOK"])
 app.add_router("/", LiensRouter, tags=["LIEN ACCES"])

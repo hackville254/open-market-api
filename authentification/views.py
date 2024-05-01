@@ -57,7 +57,7 @@ def register(request, data: RegisterSchemas):
 # connexion
 
 
-@router.post('login/', auth=None)
+@router.post('login', auth=None)
 def login(request, data: LoginSchemas):
     """
     **Endpoint pour la connexion d'un utilisateur.**
@@ -73,9 +73,9 @@ def login(request, data: LoginSchemas):
     username = data.username  # username correspond a l'email
     mdp = data.motPasse
     user = authenticate(request, username=username, password=mdp)
-    u = User.objects.filter(username=username).exists()
+    u = User.objects.filter(email=username).exists()
     if u:
-        user = User.objects.get(username=username)
+        user = User.objects.get(email=username)
         t = user.check_password(mdp)
         print(t)
         if t:
