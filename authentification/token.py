@@ -1,6 +1,7 @@
 import jwt
 from datetime import datetime, timedelta, timezone
 from ninja.errors import HttpError
+from django.contrib.auth.models import User
 
 from authentification.models import Entreprise
 from banque.models import CompteBancaire
@@ -16,16 +17,14 @@ SECRET_KEY = "$ 9@^!Q#7Xp&v$%*+0q1z2m3n4L5K6J7H8G9F0E1D2C3B4A5a6b7c8d9e0f1g2h3i4
 def create_token(user_id):
     try:
         # Set the expiration time for the token
-        
-
         # Create the payload containing the user ID, user type, and expiration time
         payload = {
             'user_id': user_id,
         }
-
+        user_id = User.objects.filter(id = user_id).first()
         # Check if the user is an enterprise
         try:
-            entreprise = Entreprise.objects.get(user_id=user_id)
+            entreprise = Entreprise.objects.get(user=user_id)
             payload['is_enterprise'] = True
             payload['entreprise_id'] = str(entreprise.id)
             payload['entreprise_name'] = entreprise.nom_entreprise

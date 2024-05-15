@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-6z7e%usrv(-r_t3+#*f30=ziw+*1=i0m^6_pyp_h7#8^tb=w)h
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -57,7 +57,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'open_Market.urls'
-CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:3004","http://192.168.1.169:3004"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:3004"]
 
 TEMPLATES = [
     {
