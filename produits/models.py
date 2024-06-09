@@ -101,7 +101,7 @@ class VisiteAcces(models.Model):
 
 class CHECKOUT(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    reference = models.CharField(max_length = 100 ,default = "")
+    reference = models.CharField(max_length = 100 ,null = True)
     slug = ShortUUIDField(length=10, max_length=10, alphabet="abcdefghijklmnopqrstuvwxyz0123456789", unique=True, editable=False)
     produit = models.ForeignKey(Produit , on_delete=models.CASCADE)
     entreprise = models.ForeignKey(Entreprise , on_delete=models.CASCADE)
