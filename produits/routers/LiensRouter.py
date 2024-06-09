@@ -15,7 +15,7 @@ router = Router()
 def ajouer_un_liens(request, data: Form[AccesSchema], image: UploadedFile):
     token = request.headers.get("Authorization").split(" ")[1]
     payload = verify_token(token)
-    e = Entreprise.object.get(id = payload.get('entreprise_id'))
+    e = Entreprise.objects.get(id = payload.get('entreprise_id'))
     lien = Acce.objects.create(
         nom_produit=data.nom_produit,
         entreprise = e,
@@ -27,7 +27,9 @@ def ajouer_un_liens(request, data: Form[AccesSchema], image: UploadedFile):
         langue_produit=data.langue_produit,
         categorie_produit=data.categorie_produit,
         lien=data.lien,
-        delais=data.delais,
+        duree_promotion = data.duree_promotion,
+        promotion = data.promotion,
+        is_visible = data.is_visible,
     )
     return 200
 
@@ -37,7 +39,7 @@ def ajouer_un_liens(request, data: Form[AccesSchema], image: UploadedFile):
 def modifier_un_lien(request, lien_id: str, data: Form[AccesSchema], image: UploadedFile = None):
     try:
         # Si des données sont fournies, les mettre à jour
-        lien = Acce.objects.get(id=lien_id)
+        lien = Acce.objects.get(slug=lien_id)
         if data:
             # Parcourir tous les champs du modèle
             for attr, value in data.dict().items():
@@ -59,10 +61,10 @@ def modifier_un_lien(request, lien_id: str, data: Form[AccesSchema], image: Uplo
         raise HttpError(500, "Une erreur s'est produite lors de la modification du lien.")
 
 
-@router.get('lien/{lien_id}')
+@router.get('get_lien/{lien_id}')
 def recuperer_un_lien(request, lien_id: str):
     try:
-        lien = list(Acce.objects.filter(id=lien_id).values())
+        lien = list(Acce.objects.filter(slug=lien_id, supprime=False , is_visible = True).values())
         return lien
     except Acce.DoesNotExist:
         raise HttpError(404, "Lien non trouvé.")
@@ -75,7 +77,7 @@ def recuperer_un_lien(request, lien_id: str):
 @router.delete('delete_lien_numerique/{lien_id}')
 def supprimer_un_livre_numerique(request, lien_id: str):
     try:
-        lien = Acce.objects.get(id=lien_id)
+        lien = Acce.objects.get(slug=lien_id)
         lien.supprime = True
         lien.save()
         return 200
@@ -83,5 +85,4 @@ def supprimer_un_livre_numerique(request, lien_id: str):
         raise HttpError(404, "Lien non trouvé.")
     except Exception as e:
         raise HttpError(500, "Une erreur s'est produite lors de la suppression du lien.")
-
 

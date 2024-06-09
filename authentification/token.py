@@ -26,6 +26,7 @@ def create_token(user_id):
         try:
             entreprise = Entreprise.objects.get(user=user_id)
             payload['is_enterprise'] = True
+            payload['first_name'] = user_id.first_name
             payload['entreprise_id'] = str(entreprise.id)
             payload['entreprise_name'] = entreprise.nom_entreprise
             # Include additional information about the user's bank account
@@ -46,7 +47,7 @@ def create_token(user_id):
 
     except Exception as e:
         # Handle any exceptions that occur during token creation
-        raise HttpError(status_code=500, detail=f"Erreur lors de la création du jeton : {e}")
+        raise HttpError(status_code=500, message=f"Erreur lors de la création du jeton : {e}")
 
 def verify_token(token):
     try:
@@ -57,11 +58,11 @@ def verify_token(token):
 
     except jwt.ExpiredSignatureError:
         # Handle the case where the token has expired
-        raise HttpError(status_code=401, detail="Le jeton a expiré")
+        raise HttpError(status_code=401, message="Le jeton a expiré")
     except jwt.InvalidTokenError:
         # Handle the case where the token is invalid
-        raise HttpError(status_code=401, detail="Jeton invalide")
+        raise HttpError(status_code=401, message="Jeton invalide")
     except Exception as e:
         # Handle any other exceptions that occur during token verification
-        raise HttpError(status_code=500, detail=f"Erreur lors de la vérification du jeton : {e}")
+        raise HttpError(status_code=500, message=f"Erreur lors de la vérification du jeton : {e}")
 

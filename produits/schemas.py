@@ -7,10 +7,9 @@ from datetime import datetime
 
 
 class ProduitSchema(ModelSchema):
-    entreprise:str
     class Meta:
         model = Produit
-        exclude = ['id', 'image_presentation', 'date_modification','entreprise', 'date']
+        exclude = ['id','slug', 'image_presentation', 'date_modification','entreprise','taille_Fichier','supprime', 'date','date_modification']
 
 
 class ProduitNumeriqueSchema(ProduitSchema):
@@ -19,13 +18,12 @@ class ProduitNumeriqueSchema(ProduitSchema):
 
 class LivreSchema(ProduitSchema):
     #auteur: str
-    nombre_page: int
+    nombre_page: Optional[int]
     #editeur: str
 
 
 class AccesSchema(ProduitSchema):
     lien: str
-    delais: datetime
 
 # // SCHEMA POUR LA MODIFICATION DES ELEMENTS
 #Optional[bool] = None
@@ -50,7 +48,6 @@ class ModifyLivre(Schema):
     prix_produit_promotion: Optional[float]
     langue_produit: Optional[str]
     categorie_produit: Optional[str]
-    taille_Fichier: Optional[int]
     nombre_page: Optional[int]
     # Ajoutez d'autres champs selon vos besoins
 
@@ -66,3 +63,22 @@ class ModifyAcces(Schema):
     lien: Optional[str]
     delais: Optional[str]
     # Ajoutez d'autres champs selon vos besoins
+
+class CHECKOUTSchema(Schema):
+    nom_client : str
+    devise_client: str
+    id_operateur: int
+    type: Optional[str]
+    pays_client: str
+    montant: float
+    moyen_de_paiement: str
+    numero: Optional[str]
+    email: str
+    codeOtp: Optional[str]
+    
+    
+class MySoleaPay(Schema):
+    operator : int
+    customer_number : str
+    amount:float
+    

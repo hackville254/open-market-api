@@ -2,7 +2,7 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from authentification.models import Entreprise
-
+from produits.models import CHECKOUT
 
 
 
@@ -37,3 +37,7 @@ class Transaction(models.Model):
         verbose_name = 'Transaction'
         verbose_name_plural = 'Transactions'
 
+class PaiementEchoue(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    checkout = models.ForeignKey(CHECKOUT , on_delete = models.CASCADE)
+    token = models.CharField(max_length = 500)

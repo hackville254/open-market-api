@@ -15,7 +15,7 @@ router = Router()
 def ajouer_un_livre(request, data: Form[LivreSchema], image: UploadedFile, fichiers: List[UploadedFile]):
     token = request.headers.get("Authorization").split(" ")[1]
     payload = verify_token(token)
-    e = Entreprise.object.get(id = payload.get('entreprise_id'))
+    e = Entreprise.objects.get(id = payload.get('entreprise_id'))
     livre = Livre.objects.create(
         nom_produit=data.nom_produit,
         entreprise = e,
@@ -26,11 +26,13 @@ def ajouer_un_livre(request, data: Form[LivreSchema], image: UploadedFile, fichi
         prix_produit_promotion=data.prix_produit_promotion,
         langue_produit=data.langue_produit,
         categorie_produit=data.categorie_produit,
-        taille_Fichier=data.taille_Fichier,
-        nombre_page=data.nombre_page,
+        duree_promotion = data.duree_promotion,
+        promotion = data.promotion,
+        is_visible = data.is_visible,
     )
     if fichiers:
         for f in fichiers:
+            livre.taille_Fichier = round(f.size/1048576,2) #Mo
             Fichier.objects.create(
                 produit=livre,
                 fichier=f
@@ -41,7 +43,7 @@ def ajouer_un_livre(request, data: Form[LivreSchema], image: UploadedFile, fichi
 @router.post('modifier_un_livre/{livre_id}')
 def modifier_un_livre(request, livre_id: str, data: Form[ModifyLivre], image: UploadedFile = None, fichiers: List[UploadedFile] = None):
     # Si des données sont fournies, les mettre à jour
-    livre = Livre.objects.get(id=livre_id)
+    livre = Livre.objects.get(slug=livre_id)
     print(data)
     if data:
         # Parcourir tous les champs du modèle
@@ -61,6 +63,7 @@ def modifier_un_livre(request, livre_id: str, data: Form[ModifyLivre], image: Up
         for fileId, f in zip(data.fileId, fichiers):
             if fileId:  # S'il existe un fileId, mettre à jour le fichier existant
                 # Recherche du fichier existant par son fileId et l'associer au livre
+                livre.taille_Fichier = round(f.size/1048576,2) #Mo
                 fichier_exist = Fichier.objects.get(id=fileId)
                 fichier_exist.fichier = f
                 fichier_exist.save()
@@ -71,17 +74,19 @@ def modifier_un_livre(request, livre_id: str, data: Form[ModifyLivre], image: Up
     return 200
 
 
-@router.get('livres/{livre_id}')
+@router.get('get_produit_livre/{livre_id}')
 def recuperer_un_livre(request, livre_id: str):
-    livre = list(Livre.objects.filter(id=livre_id).values())
-    return livre
+    livre = list(Livre.objects.filter(slug=livre_id , supprime=False).values())
+    pf = Livre.objects.get(slug = livre_id)
+    fichier = list(Fichier.objects.filter(produit = pf).values("fichier"))
+    return livre+fichier
 
 # supprimer un livre ave son <<id>>
 
 
 @router.delete('delete_livre_numerique/{livre_id}')
 def supprimer_un_livre_numerique(request, livre_id: str):
-    livre = Livre.objects.get(id=livre_id)
+    livre = Livre.objects.get(slug=livre_id)
     livre.supprime = True
     livre.save()
     return 200

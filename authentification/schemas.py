@@ -46,7 +46,6 @@ class LoginSchemas(Schema):
 
 class EntrepriseSchema(ModelSchema):
     email: str
-    numero_operateur:str
     class Meta:
         model = Entreprise
         exclude = ['id', 'user', 'supprime',
@@ -57,3 +56,10 @@ class EntrepriseSchema(ModelSchema):
             raise HttpError(status_code=400,
                             message="L'adresse e-mail n'est pas valide.")
         return email
+
+
+
+class LicenceSchemas(Schema):
+    type : str
+    prix : str
+    periode:str

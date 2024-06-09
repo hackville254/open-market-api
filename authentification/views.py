@@ -52,7 +52,7 @@ def register(request, data: RegisterSchemas):
         u.first_name = nom
         u.save()
         token = create_token(u.id)
-        return {"status": 201, "token": token, "message": "votre compte a été créé avec succès"}
+        return {"status": 201,'is_entreprise':False, "token": token, "message": "votre compte a été créé avec succès"}
 
 # connexion
 
@@ -82,7 +82,12 @@ def loginS(request, data: LoginSchemas):
         print("identifiant de l'utilisateur",user.id)
         if t:
             token = create_token(user.id)
-            return {"token": token}
+            is_entreprise = Entreprise.objects.filter(user=user).exists()
+            if is_entreprise:
+                return {"status": 200, 'is_entreprise': True, "token": token, "message": "Bienvenue" + user.first_name , 'name':user.first_name}
+            else:
+                return {"status": 200, 'is_entreprise': False, "token": token, "message": "Bienvenue" + user.first_name, 'name':user.first_name}
+
         else:
             raise HttpError(status_code=404,
                             message="Le mot de passe fourni est incorrect. Veuillez vérifier vos informations d'identification et réessayer.")
@@ -93,7 +98,7 @@ def loginS(request, data: LoginSchemas):
 # CREATION D'UNE ENTREPRISE
 
 
-@router.post('cree_entreprise/')
+@router.post('cree_entreprise')
 def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = None):
     """
     **Endpoint pour la création d'une entreprise.**
@@ -142,8 +147,8 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
         else:
             new_company = Entreprise.objects.create(
                 **data.dict(), user=u, logo=logo)
-            CompteBancaire.objects.create(entreprise=new_company,numero_operateur = data.numero_operateur)
-            return {"message": "Entreprise créée avec succès", "entreprise": EntrepriseSchema.from_orm(new_company)}
+            CompteBancaire.objects.create(entreprise=new_company,numero_operateur = data.numero)
+            return {"status": 200,"message": "Entreprise créée avec succès", "entreprise": EntrepriseSchema.from_orm(new_company)}
 
 
 # GET
@@ -193,14 +198,33 @@ def getEntreprise(request):
         user = User.objects.filter(id=user_id).first()
         if not user:
             raise HttpError(404, "Utilisateur non trouvé.")
-
-        entreprise = list(Entreprise.objects.filter(user=user).values())
+        userInfos= list(User.objects.filter(id=user_id).values(
+            "username", "first_name"))
+        entreprise = list(Entreprise.objects.filter(user=user).values("nom_entreprise","description","pays","numero","email","logo","ville","slug"))
         if not entreprise:
             raise HttpError(404, "Aucune entreprise associée à cet utilisateur.")
-
-        return entreprise
+        result = []
+        result = {
+            'userInfos': userInfos,
+            'entrepriseInfos': entreprise
+        }
+        return result
     except HttpError as e:
         raise e
     except Exception as e:
         raise HttpError(500, "Une erreur s'est produite lors de la récupération des données de l'entreprise.")
-   
+
+
+# RECUPERER LES INFORMATIONS DE L'UTILISATEUR
+@router.get('token')
+def getToken(request):
+    try:
+        print(request.headers)
+        print('------------------------------------------')
+        token = request.headers.get("Authorization").split(" ")[1]
+        payload = verify_token(token)
+        return 200
+    except:
+        raise HttpError(status_code=404, message="veillez vous connectez svp")
+
+

@@ -1,0 +1,2 @@
+data = {'success': True, 'code': 200, 'data': {'status': 'SUCCESS', 'amount': 100, 'currency': 'XAF', 'ref': 'MP240609.1005.B39201', 'payId': 'MLS3671B'}, 'message': 'Payment Receive Successfully', 'order_id': '3g574boy6c'}
+print(data["data"]["amount"])

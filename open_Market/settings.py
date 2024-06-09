@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,17 +21,45 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6z7e%usrv(-r_t3+#*f30=ziw+*1=i0m^6_pyp_h7#8^tb=w)h'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
+    SECRET_KEY = 'django-insecure-6z7e%usrv(-r_t3+#*f30=ziw+*1=i0m^6_pyp_h7#8^tb=w)h'
+    DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+else:
+    ALLOWED_HOSTS = ['*']
+    SECRET_KEY = config('SECRET_KEY')
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_HSTS_SECONDS = 3600  # Set the desired value in seconds
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True 
+    DATABASES = {
+    'default': {
+        'ENGINE': config('DATABASE_ENGINE'),
+        'NAME': config('DATABASE_NAME'),
+        'USER': config('DATABASE_USER'),
+        'PASSWORD': config('DATABASE_PASSWORD'),
+        'HOST': config('DATABASE_HOST'),
+        'PORT': config('DATABASE_PORT', cast=int),
+    }
+}
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,7 +70,8 @@ INSTALLED_APPS = [
     'authentification',
     'produits',
     'banque',
-
+    'django_quill',
+    'minio_storage',
 ]
 
 
@@ -56,8 +86,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'open_Market.urls'
-CORS_ALLOWED_ORIGINS = ["http://localhost:3004"]
+ROOT_URLCONF = 'open_Market.urls' 
+CORS_ALLOWED_ORIGINS = ["http://192.168.1.168:3004","http://192.168.1.168:5004","http://*"]
 
 TEMPLATES = [
     {
@@ -81,13 +111,20 @@ WSGI_APPLICATION = 'open_Market.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
+
+
+
+JAZZMIN_SETTINGS = {
+    # title of the window (Will default to current_admin_site.site_title if absent or None)
+    "site_title": "Open market Admin",
+    "site_header": "Open market",
+    "site_brand": "Open market",
+    "login_logo": False,
+    "site_icon": None,
+    "welcome_sign": "Bienvenue sur Open market",
+    "copyright": " Open market",
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -123,9 +160,24 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-MEDIA_ROOT = BASE_DIR/'media'
-MEDIA_URL = 'media/'
+STATIC_URL = '/static/'
+STATICFILES_DIR = [BASE_DIR/'static']
+
+DEFAULT_FILE_STORAGE = "minio_storage.storage.MinioMediaStorage"
+STATICFILES_STORAGE = "minio_storage.storage.MinioStaticStorage"
+
+MINIO_STORAGE_ENDPOINT = config('MINIO_STORAGE_ENDPOINT')
+MINIO_STORAGE_ACCESS_KEY = config('MINIO_STORAGE_ACCESS_KEY')
+MINIO_STORAGE_SECRET_KEY = config('MINIO_STORAGE_SECRET_KEY')
+MINIO_STORAGE_USE_HTTPS = config('MINIO_STORAGE_USE_HTTPS')
+MINIO_STORAGE_MEDIA_OBJECT_METADATA = {"Cache-Control": "max-age=1000"}
+MINIO_STORAGE_MEDIA_BUCKET_NAME = 'media'
+MINIO_STORAGE_MEDIA_BACKUP_BUCKET = 'Recycle Bin'
+MINIO_STORAGE_MEDIA_BACKUP_FORMAT = '%c/'
+MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True
+MINIO_STORAGE_STATIC_BUCKET_NAME = 'static'
+MINIO_STORAGE_AUTO_CREATE_STATIC_BUCKET = True
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
