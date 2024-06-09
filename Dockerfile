@@ -6,16 +6,16 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Créer et définir le répertoire de travail dans le conteneur
-WORKDIR /OPENMARKET
+WORKDIR /openmarket
 
 # Copier le fichier requirements.txt dans le conteneur
-COPY ./requirements.txt /OPENMARKET/
+COPY ./requirement.txt /openmarket/
 
 # Installer les dépendances Python
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirement.txt
 
 # Copier le code de l'application Django dans le conteneur
-COPY . /OPENMARKET/
+COPY . /openmarket/
 
 
 # Exposer le port sur lequel l'application Django écoute
