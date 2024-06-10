@@ -150,12 +150,9 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
         else:
             new_company = Entreprise.objects.create(
                 **data.dict(), user=u, logo=logo)
-            uuid_str = str(uuid.uuid4())[:5]
-            uuid_str1 = str(uuid.uuid4())[:3]
-            uuid_str2 = str(uuid.uuid4())[:4]
-            date_enregistrement = datetime.now().strftime('%Y%m%d%H%M%S%f')
-            print(date_enregistrement)
-            numero_compte = f"opm{uuid_str2}{date_enregistrement}{uuid_str}{uuid_str1}"
+            date_enregistrement = datetime.now().strftime('%m%d%H%M%S%f')
+            uuid_str2 = str(uuid.uuid4())[:5]
+            numero = f"opm{uuid_str2}{date_enregistrement}"
             new_company = Entreprise.objects.get(slug = new_company.slug)
             print('entreprise = ',new_company)
             c = CompteBancaire.objects.create(entreprise=new_company)

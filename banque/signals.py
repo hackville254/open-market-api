@@ -21,11 +21,9 @@ def generate_numero_compte(sender, instance, **kwargs):
         instance.numero_compte = f"OPM{uuid_str1}{new_id:04d}{date_enregistrement}{uuid_str}"
         
      """    
-""" date_enregistrement = datetime.now().strftime('%Y%m%d%H%M%S%f')
-uuid_str = str(uuid.uuid4())[:5]
-uuid_str1 = str(uuid.uuid4())[:3]
-uuid_str2 = str(uuid.uuid4())[:4]
-print(date_enregistrement)
-numero = f"opm{uuid_str2}{date_enregistrement}{uuid_str}{uuid_str1}"
+date_enregistrement = datetime.now().strftime('%m%d%H%M%S%f')
+uuid_str2 = str(uuid.uuid4())[:5]
+numero = f"opm{uuid_str2}{date_enregistrement}"
 print(numero)
- """
+print(len(numero))
+
