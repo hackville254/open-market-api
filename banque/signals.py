@@ -6,7 +6,7 @@ from datetime import datetime
 from .models import CompteBancaire
 
 
-@receiver(pre_save, sender=CompteBancaire)
+""" @receiver(pre_save, sender=CompteBancaire)
 def generate_numero_compte(sender, instance, **kwargs):
     if not instance.numero_compte:
         last_compte = CompteBancaire.objects.order_by('-id').first()
@@ -20,7 +20,7 @@ def generate_numero_compte(sender, instance, **kwargs):
         uuid_str1 = str(uuid.uuid4())[:3]
         instance.numero_compte = f"OPM{uuid_str1}{new_id:04d}{date_enregistrement}{uuid_str}"
         
-        
+     """    
 # date_enregistrement = datetime.now().strftime('%Y%m%d')
 # uuid_str = str(uuid.uuid4())[:5]
 # uuid_str1 = str(uuid.uuid4())[:3]
