@@ -136,6 +136,7 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
     payload = verify_token(token)
     user_id = payload.get('user_id')
     u = User.objects.filter(id=user_id).first()
+    print(data)
     if u:
         # Check if the company already exists
         entreprise = Entreprise.objects.filter(
@@ -152,6 +153,7 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
             uuid_str = str(uuid.uuid4())[:5]
             uuid_str1 = str(uuid.uuid4())[:3]
             uuid_str2 = str(uuid.uuid4())[:4]
+            date_enregistrement = datetime.now().strftime('%Y%m%d%H%M%S%f')
             print(date_enregistrement)
             numero_compte = f"opm{uuid_str2}{date_enregistrement}{uuid_str}{uuid_str1}"
             print('numero de compte = ',numero_compte)

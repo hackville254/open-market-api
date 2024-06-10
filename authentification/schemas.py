@@ -48,8 +48,7 @@ class EntrepriseSchema(ModelSchema):
     email: str
     class Meta:
         model = Entreprise
-        exclude = ['id', 'user', 'supprime',
-                   'date_modification', 'date', 'logo','is_activate','is_private']
+        exclude = ['id', 'user', 'supprime','devise','slug','date_modification', 'date', 'logo','is_activate','is_private']
     @validator('email')
     def validate_email(cls, email):
         if not re.match(email_regex, email):
