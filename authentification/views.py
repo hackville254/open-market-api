@@ -149,17 +149,14 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
         else:
             new_company = Entreprise.objects.create(
                 **data.dict(), user=u, logo=logo)
-            last_compte = CompteBancaire.objects.order_by('-id').first()
-            if last_compte:
-                last_id = int(last_compte.numero_compte[6:])
-                new_id = last_id + 1
-            else:
-                new_id = 1
-            date_enregistrement = datetime.now().strftime('%d%m%Y')
             uuid_str = str(uuid.uuid4())[:5]
             uuid_str1 = str(uuid.uuid4())[:3]
-            numero_compte = f"OPM{uuid_str1}{new_id:04d}{date_enregistrement}{uuid_str}"
-            CompteBancaire.objects.create(entreprise=new_company,numero_operateur = data.numero , numero_compte = numero_compte)
+            uuid_str2 = str(uuid.uuid4())[:4]
+            print(date_enregistrement)
+            numero_compte = f"opm{uuid_str2}{date_enregistrement}{uuid_str}{uuid_str1}"
+            print('numero de compte = ',numero_compte)
+            c = CompteBancaire.objects.create(entreprise=new_company,numero_operateur = data.numero , numero_compte = numero_compte)
+            print(c)
             return {"status": 200,"message": "Entreprise créée avec succès", "entreprise": EntrepriseSchema.from_orm(new_company)}
 
 
