@@ -9,8 +9,8 @@ from produits.models import CHECKOUT
 class CompteBancaire(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     entreprise = models.ForeignKey(Entreprise, on_delete=models.CASCADE)
-    numero_compte = models.CharField(max_length=25)
-    numero_operateur = models.CharField(max_length=20)
+    numero_compte = models.CharField(max_length=25,default = "opm3ce1a0610203828460310")
+    numero_operateur = models.CharField(max_length=20 , default = "opm99999999")
     solde = models.FloatField(default=0)
     bloque = models.BooleanField(default=False)
     supprime = models.BooleanField(default=False)
