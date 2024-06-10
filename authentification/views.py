@@ -84,9 +84,9 @@ def loginS(request, data: LoginSchemas):
             token = create_token(user.id)
             is_entreprise = Entreprise.objects.filter(user=user).exists()
             if is_entreprise:
-                return {"status": 200, 'is_entreprise': True, "token": token, "message": "Bienvenue" + user.first_name , 'name':user.first_name}
+                return {"status": 200, 'is_entreprise': True, "token": token, "message": "Bienvenue " + user.first_name , 'name':user.first_name}
             else:
-                return {"status": 200, 'is_entreprise': False, "token": token, "message": "Bienvenue" + user.first_name, 'name':user.first_name}
+                return {"status": 200, 'is_entreprise': False, "token": token, "message": "Bienvenue " + user.first_name, 'name':user.first_name}
 
         else:
             raise HttpError(status_code=404,
