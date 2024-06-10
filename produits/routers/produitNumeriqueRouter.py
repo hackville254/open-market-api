@@ -63,6 +63,7 @@ def get_by_slug_by(request, slug: str):
     try:
         token = request.headers
         produit = list(Produit.objects.filter(slug=slug).values())
+        produit[0]['image_presentation'] = Produit.objects.get(slug=slug).image_presentation.url
         return {"status": 200, "produit": produit}
     except Exception as e:
         return HttpError(message="Erreur interne du serveur", status_code=500)
