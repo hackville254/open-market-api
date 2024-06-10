@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 if DEBUG:
     ALLOWED_HOSTS = ['*']
@@ -36,7 +36,7 @@ if DEBUG:
     }
 }
 else:
-    ALLOWED_HOSTS = ['*']
+    ALLOWED_HOSTS = ['https://opm-api-api.agocze.easypanel.host','opm-api-api.agocze.easypanel.host']
     CORS_ALLOWED_ORIGINS = ["https://business.op-markets.com","https://op-markets.com","https://shop.op-markets.com"]
     SECRET_KEY = config('SECRET_KEY')
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
