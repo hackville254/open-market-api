@@ -23,7 +23,7 @@ from django.conf import settings
 from django.views.static import serve
 from .api import app
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/open/markets/administration/', admin.site.urls),
     path("v1/api/", app.urls),
     re_path(r'^media/(?P<path>.*)$', serve,
             {'document_root': settings.MEDIA_ROOT}),

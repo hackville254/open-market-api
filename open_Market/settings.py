@@ -28,6 +28,7 @@ DEBUG = True
 if DEBUG:
     ALLOWED_HOSTS = ['*']
     SECRET_KEY = 'django-insecure-6z7e%usrv(-r_t3+#*f30=ziw+*1=i0m^6_pyp_h7#8^tb=w)h'
+    CORS_ALLOWED_ORIGINS = ["http://192.168.1.168:3004","http://192.168.1.168:5004","http://*"]
     DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -36,6 +37,7 @@ if DEBUG:
 }
 else:
     ALLOWED_HOSTS = ['*']
+    CORS_ALLOWED_ORIGINS = ["https://business.op-markets.com","https://op-markets.com","https://shop.op-markets.com"]
     SECRET_KEY = config('SECRET_KEY')
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_HSTS_SECONDS = 3600  # Set the desired value in seconds
@@ -87,7 +89,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'open_Market.urls' 
-CORS_ALLOWED_ORIGINS = ["http://192.168.1.168:3004","http://192.168.1.168:5004","http://*"]
 
 TEMPLATES = [
     {
@@ -150,7 +151,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'fr-fr'
 
-TIME_ZONE = 'Europe/Paris'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
