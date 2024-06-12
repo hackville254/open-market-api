@@ -23,12 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 if DEBUG:
     ALLOWED_HOSTS = ['*']
     SECRET_KEY = 'django-insecure-6z7e%usrv(-r_t3+#*f30=ziw+*1=i0m^6_pyp_h7#8^tb=w)h'
-    CORS_ALLOWED_ORIGINS = ["http://192.168.1.168:3004","http://192.168.1.168:5004","http://*"]
+    CORS_ALLOWED_ORIGINS = ["http://192.168.1.169:3004","http://192.168.1.169:5004","http://*"]
     DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

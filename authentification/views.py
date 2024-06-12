@@ -153,7 +153,6 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
             new_company = Entreprise.objects.get(slug = new_company.slug)
             print('entreprise = ',new_company)
             c = CompteBancaire.objects.create(entreprise=new_company)
-            print('numero de compte = ',numero_compte)
             print(c)
             return {"status": 200,"message": "Entreprise créée avec succès", "entreprise": EntrepriseSchema.from_orm(new_company)}
 

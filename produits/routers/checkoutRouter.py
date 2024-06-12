@@ -152,9 +152,16 @@ def payOut(request, data: MySoleaPay):
     e = Entreprise.objects.get(id=payload.get("entreprise_id"))
     compte = CompteBancaire.objects.get(entreprise = e)
     amount = data.amount
+    solde = compte.solde
     print(data)
     print('amount' , amount)
-    if compte.solde >= 100:
+    if amount < 100:
+        return {
+            "status": 403,
+            "message": "Le montant minimum à retirer est de 100."
+        }
+    print("somme du compte , = ",compte.solde)
+    if solde > 100 and amount <= solde:
         if data.operator in [1, 2]:
             devise = "XAF"
         else:
@@ -193,8 +200,27 @@ def payOut(request, data: MySoleaPay):
                 compte.solde -= float(amount)
                 compte.save()
                 return {"status":result.get('code') , "message": str(amount) +' ' + devise + " ont été retirés de votre compte. Merci de faire confiance à Open Market."}
-    return {"status":403 , "message":"Votre solde doit être supérieur ou égal à 100 pour cette opération."}
-
+            else:
+                return {
+                    "status": result.get('code'),
+                    "message": result.get('message', "Erreur lors du retrait.")
+                }
+        else:
+            return {
+                "status": 401,
+                "message": "Échec de l'authentification avec le service externe."
+            }
+    else:
+        if solde <= 100:
+            return {
+                "status": 403,
+                "message": "Votre solde doit être supérieur à 100 pour cette opération."
+            }
+        elif amount > solde:
+            return {
+                "status": 403,
+                "message": "Le montant à retirer est supérieur au solde du compte."
+            }
 
 
 

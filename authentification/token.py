@@ -31,8 +31,6 @@ def create_token(user_id):
             payload['entreprise_name'] = entreprise.nom_entreprise
             # Include additional information about the user's bank account
             compte_bancaire = CompteBancaire.objects.get(entreprise=entreprise)
-            payload['compte_bancaire_id'] = str(compte_bancaire.id)
-            payload['numero_compte'] = compte_bancaire.numero_compte
             # Add any other necessary information from the CompteBancaire model
             payload['exp'] = datetime.now(timezone.utc) + timedelta(days=1)
         except Entreprise.DoesNotExist:
