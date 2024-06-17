@@ -176,7 +176,8 @@ def callbackPayin(request):
             username = checkout.nom_client
             nom_produit = produit.nom_produit
             recipient = checkout.email
-            send_emailB(subject, username, nom_produit, recipient , url_produit)
+            vendeur_contact = "https://wa.me/"+checkout.entreprise.numero
+            send_emailB(subject, username, nom_produit, recipient , url_produit ,vendeur_contact)
             print('email envoyer')
             # Traitez les données du webhook ici en utilisant le header et le contenu brut
             """
