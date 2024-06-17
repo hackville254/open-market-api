@@ -76,8 +76,6 @@ class PaiementReussi(models.Model):
         verbose_name_plural = "Paiements Réussis"
 
 
-
-
 class Historique(models.Model):
     montant = models.FloatField(default = 0)
     devise = models.CharField(max_length=10)

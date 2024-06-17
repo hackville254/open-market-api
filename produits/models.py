@@ -114,7 +114,7 @@ class CHECKOUT(models.Model):
     numero = models.CharField(max_length = 30 , null = True)
     email = models.CharField(max_length = 30 , null = True)
     codeOtp = models.CharField(max_length = 10 , null = True)
-    orderId = models.CharField(max_length = 10 , null = True)
+    orderId = models.CharField(max_length = 10 , default = "open_market")
     date = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
     
