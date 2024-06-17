@@ -1,3 +1,2 @@
 # Ignorer les fichiers de migration de Django
-**/migrations/
 **/__pycache__/
