@@ -78,7 +78,7 @@ class PaiementReussi(models.Model):
 
 class MargeBrute(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    checkout = models.ForeignKey(CHECKOUT, on_delete=models.CASCADE)
+    checkout = models.ForeignKey(CHECKOUT, on_delete=models.CASCADE , null = True)
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
