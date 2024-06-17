@@ -21,7 +21,7 @@ class AcceAdmin(admin.ModelAdmin):
 
 
 class CHECKOUTAdmin(admin.ModelAdmin):
-    list_display = ('entreprise', 'produit', 'nom_client', 'status', 'pays_client', 'moyen_de_paiement', 'numero', 'date_modification', 'date')
+    list_display = ('entreprise','produit', 'nom_client', 'status', 'pays_client', 'email','moyen_de_paiement', 'numero', 'date_modification', 'date')
     list_display_links = ('entreprise','produit')  # Les champs cliquables pour accéder à la modification
     search_fields = ('reference', 'nom_client', 'status', 'type', 'pays_client', 'moyen_de_paiement', 'numero', 'email')
     list_filter = ('status', 'type', 'pays_client', 'moyen_de_paiement', 'date')
