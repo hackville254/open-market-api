@@ -103,7 +103,7 @@ class CHECKOUT(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     reference = models.CharField(max_length = 100 ,null = True)
     slug = ShortUUIDField(length=10, max_length=10, alphabet="abcdefghijklmnopqrstuvwxyz0123456789", unique=True, editable=False)
-    produit = models.ForeignKey(Produit , on_delete=models.CASCADE)
+    produit = models.ForeignKey(Produit , on_delete=models.CASCADE , null = True)
     entreprise = models.ForeignKey(Entreprise , on_delete=models.CASCADE)
     nom_client = models.CharField(max_length = 100)
     devise_client = models.CharField(max_length = 5)
@@ -114,7 +114,7 @@ class CHECKOUT(models.Model):
     numero = models.CharField(max_length = 30 , null = True)
     email = models.CharField(max_length = 30 , null = True)
     codeOtp = models.CharField(max_length = 10 , null = True)
-    orderId = models.CharField(max_length = 10 , default = "open_market")
+    orderId = models.CharField(max_length = 10 , null = True, default = "open_market")
     date = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
     
