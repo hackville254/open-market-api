@@ -37,7 +37,7 @@ if DEBUG:
 }
 else:
     ALLOWED_HOSTS = ['https://opm-api-api.agocze.easypanel.host','opm-api-api.agocze.easypanel.host', 'mysoleas.com' , 'https://mysoleas.com']
-    CORS_ALLOWED_ORIGINS = ["https://business.op-markets.com","https://op-markets.com","https://shop.op-markets.com","https://*"]
+    CORS_ALLOWED_ORIGINS = ["https://business.op-markets.com","https://op-markets.com","https://shop.op-markets.com","https://mysoleas.com"]
     SECRET_KEY = config('SECRET_KEY')
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_HSTS_SECONDS = 3600  # Set the desired value in seconds

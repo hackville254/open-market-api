@@ -111,7 +111,6 @@ verify_url = "https://soleaspay.com/api/agent/verif-pay"
 def verify_payment_router(request, orderId: str):
     checkhout = CHECKOUT.objects.get(orderId=orderId)
     if checkhout.status == "Reussi":
-        compte = CompteBancaire.objects.get(entreprise=entreprise)
         PaiementReussi.objects.create(checkout=checkhout)
         return {"status": 200, "message": "votre produit a ete envoyer par email"}
     else:
@@ -167,7 +166,7 @@ def callbackPayin(request):
                 compte.solde += float(produit.prix_produit_promotion)
                 compte.save()
             else:
-                compte.solde = float(produit.prix_produit)
+                compte.solde += float(produit.prix_produit)
                 compte.save()
             # send email
             url_produit = f"https://shop.op-markets.com/download/{checkout.id}/{order_id}"
