@@ -4,7 +4,6 @@ from .models import (
     Transaction,
     PaiementEchoue,
     PaiementReussi,
-    MargeBrute,
     Retrait,
     Historique,
 )
@@ -26,12 +25,6 @@ class PaiementReussiAdmin(admin.ModelAdmin):
     ordering = ("-date",)
 
 
-class MargeBruteAdmin(admin.ModelAdmin):
-    list_display = ("checkout", "date")
-    search_fields = ("checkout", "date")
-    list_filter = ("checkout", "date")
-    ordering = ("-date",)
-
 
 class RetraitAdmin(admin.ModelAdmin):
     list_display = ("id", "compte", "montant", "date")
@@ -50,7 +43,6 @@ admin.site.register(PaiementEchoue, PaiementEchoueAdmin)
 admin.site.register(PaiementReussi, PaiementReussiAdmin)
 admin.site.register(Retrait, RetraitAdmin)
 admin.site.register(Historique , HistoriqueAdmin)
-# admin.site.register(MargeBrute, MargeBruteAdmin)
 
 
 @admin.register(CompteBancaire)
