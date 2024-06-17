@@ -20,6 +20,7 @@ app = NinjaAPI(
     title='open market',
     version="1.0.0",
     auth=GlobalAuth(),
+    docs_url=None
 )
 app.add_router("authenticate/",AuthRouter,tags=["Authentification"])
 app.add_router("/", produitRouter, tags=["PRODUIT NUMERIQUE"])
