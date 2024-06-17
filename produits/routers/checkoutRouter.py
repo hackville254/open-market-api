@@ -213,12 +213,15 @@ def payOut(request, data: MySoleaPay):
         else:
             devise = "XOF"
         print(devise)
-
+        compte.solde -= float(amount)
+        compte.save()
+        Retrait.objects.create(compte=compte, montant=amount)
         url = f"{BASE_URL}action/auth"
         payload = {
             "public_apikey": config("X-API-KEY"),
             "private_secretkey": config("PRIVATE_SECRET_KEY"),
         }
+        
         response = requests.request("POST", url, json=payload)
 
         response_data = json.loads(response.text)
@@ -243,9 +246,6 @@ def payOut(request, data: MySoleaPay):
             result = response.json()
             print(result)
             if result.get("code") == 200:
-                compte.solde -= float(amount)
-                compte.save()
-                Retrait.objects.create(compte=compte, montant=amount)
                 return {
                     "status": result.get("code"),
                     "message": str(amount)
