@@ -76,14 +76,6 @@ class PaiementReussi(models.Model):
         verbose_name_plural = "Paiements Réussis"
 
 
-class MargeBrute(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    checkout = models.ForeignKey(CHECKOUT, on_delete=models.CASCADE , null = True)
-    date = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Marge brute par paiement"
-        verbose_name_plural = "Marge brute par paiement"
 
 
 class Historique(models.Model):
