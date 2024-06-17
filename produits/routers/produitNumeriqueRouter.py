@@ -62,7 +62,7 @@ def get_by_slug(request, slug: str):
 def get_by_slug_by(request, slug: str):
     try:
         token = request.headers
-        produit = list(Produit.objects.filter(slug=slug).values())
+        produit = list(Produit.objects.filter(slug=slug , is_visible = True , supprime = False).values())
         produit[0]['image_presentation'] = Produit.objects.get(slug=slug).image_presentation.url
         return {"status": 200, "produit": produit}
     except Exception as e:

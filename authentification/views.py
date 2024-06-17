@@ -4,6 +4,11 @@ from django.contrib.auth import authenticate
 
 from ninja.errors import HttpError
 
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
+
 from banque.models import CompteBancaire
 from .code import generer_code
 from .models import Entreprise
@@ -234,3 +239,16 @@ def getToken(request):
         raise HttpError(status_code=404, message="veillez vous connectez svp")
 
 
+@router.get('send_email', auth = None)
+def send_emailB(request):
+    subject = 'Confirmation de votre achat sur Open Market'
+    username = 'Franklin Delbo' 
+    nom_produit = "produit de massage"
+    recipient = 'fdelbo47@gmail.com'
+    html_content = render_to_string('email_template.html', {'username': username , 'nom_produit' : nom_produit})
+    text_content = strip_tags(html_content)
+    # Créer l'email multi alternatives
+    msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [recipient])
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()
+    return {"success": True, "message": "Email sent successfully"}

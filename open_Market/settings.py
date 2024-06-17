@@ -15,7 +15,7 @@ from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+TEMPLATE_DIR = BASE_DIR/'templates'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -36,8 +36,8 @@ if DEBUG:
     }
 }
 else:
-    ALLOWED_HOSTS = ['https://opm-api-api.agocze.easypanel.host','opm-api-api.agocze.easypanel.host']
-    CORS_ALLOWED_ORIGINS = ["https://business.op-markets.com","https://op-markets.com","https://shop.op-markets.com"]
+    ALLOWED_HOSTS = ['https://opm-api-api.agocze.easypanel.host','opm-api-api.agocze.easypanel.host', 'mysoleas.com' , 'https://mysoleas.com']
+    CORS_ALLOWED_ORIGINS = ["https://business.op-markets.com","https://op-markets.com","https://shop.op-markets.com","https://mysoleas.com"]
     SECRET_KEY = config('SECRET_KEY')
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_HSTS_SECONDS = 3600  # Set the desired value in seconds
@@ -57,6 +57,14 @@ else:
     }
 }
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'op-markets.com'  # Serveur de mail sortant
+EMAIL_PORT = 465  # Port pour SMTP avec SSL/TLS
+EMAIL_USE_TLS = False  # TLS désactivé car nous utilisons SSL/TLS
+EMAIL_USE_SSL = True  # SSL/TLS activé
+EMAIL_HOST_USER = 'OPENMARKET@op-markets.com'  # Nom d'utilisateur du serveur de mail
+EMAIL_HOST_PASSWORD = 'jWph78#84' # For plesk use app password
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # Optionnel, mais recommandé
 
 # Application definition
 
@@ -93,7 +101,7 @@ ROOT_URLCONF = 'open_Market.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATE_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

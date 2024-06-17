@@ -7,12 +7,7 @@ from authentification.models import Entreprise
 from banque.models import CompteBancaire
 
 # Secret key for signing and verifying tokens
-SECRET_KEY = "$ 9@^!Q#7Xp&v$%*+0q1z2m3n4L5K6J7H8G9F0E1D2C3B4A5a6b7c8d9e0f1g2h3i4j5k6l7M8N9O0P!@#$%^&*()"
-
-
-
-
-
+SECRET_TOKEN = "$ 9@^!Q#7Xp&v$%*+0q1z2m3n4L5K6J7H8G9F0E1D2C3B4A5a6b7c8d9e0f1g2h3i4j5k6l7M8N9O0P!@#$%^&*()"
 
 def create_token(user_id):
     try:
@@ -39,7 +34,7 @@ def create_token(user_id):
             
 
         # Generate the token using the payload and secret key
-        token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+        token = jwt.encode(payload, SECRET_TOKEN, algorithm='HS256')
 
         return token
 
@@ -50,7 +45,7 @@ def create_token(user_id):
 def verify_token(token):
     try:
         # Verify and decode the token using the secret key
-        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        payload = jwt.decode(token, SECRET_TOKEN, algorithms=['HS256'])
         user_id = payload['user_id']
         return payload
 

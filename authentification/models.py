@@ -28,7 +28,7 @@ class Entreprise(models.Model):
     date = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.slug
+        return self.nom_entreprise
     
 
     class Meta:

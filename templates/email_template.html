@@ -1,0 +1,147 @@
+<!-- templates/purchase_thank_you_email.html -->
+
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de commande - Open Market</title>
+    <style>
+        /* Styles généraux */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+        }
+
+        .container1 {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .container2 {
+            display: flex;
+            border: 2px;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        h2 {
+            color: #ffffff;
+            text-align: center;
+            background-color: #007bff;
+            padding: 20px;
+            margin-top: 0;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+
+        .product-image {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+
+
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 0;
+            border-radius: 5px;
+            margin: 10px 0;
+            width: 100%;
+            text-align: center;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .button a {
+            color: #000;
+        }
+        .button-contact {
+            background-color: #dc3545;
+            /* Rouge Open Market */
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .whatsapp-button,
+        .telegram-button {
+            display: inline-block;
+            width: 90%;
+            text-decoration: none;
+            color: #ffffff;
+            padding: 10px 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+            background-color: #25D366;
+            /* Couleur WhatsApp */
+            margin: 10px;
+        }
+
+        .telegram-button {
+            background-color: #0088cc;
+            /* Couleur Telegram */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Confirmation de votre commande</h2>
+
+        <p>Salut 👋 {{ username }},</p>
+
+        <p>Nous vous remercions pour votre achat 🛒 sur Open Market.</p>
+
+        <p>Vous avez acheté le produit suivant : <strong>{{ nom_produit }}</strong> </p>
+
+        <p>Vous pouvez maintenant récupérer votre produit en cliquant sur le bouton ci-dessous :</p>
+        <a href="{{url_produit}}" class="button">Récupérer votre produit</a>
+
+        <p>Pour toute question concernant votre commande, veuillez contacter le vendeur :</p>
+        <a href="mailto:vendeur@example.com" class="button button-contact">Contacter le vendeur</a>
+
+    </div>
+    <div class="container1">
+        <h1 style="text-align: center;">Besoin d'aide ?</h1>
+        <div class="container2">
+            <a href="https://wa.me/+237683435844" class="whatsapp-button">WhatsApp</a>
+            <a href="https://t.me/+EXvTAEWr_u1jMzZk" class="telegram-button">Telegram</a>
+        </div>
+
+        <div class="footer">
+            <p style="text-align: center;">
+                &copy; 2024 Open Market. Tous droits réservés.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

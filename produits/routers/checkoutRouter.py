@@ -1,8 +1,14 @@
 from ninja import Router
 from authentification.models import Entreprise
-from banque.models import PaiementEchoue,CompteBancaire
+from banque.models import (
+    PaiementEchoue,
+    CompteBancaire,
+    PaiementReussi,
+    Retrait,
+    Historique,
+)
 from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, CHECKOUT
-from ..schemas import CHECKOUTSchema , MySoleaPay
+from ..schemas import CHECKOUTSchema, MySoleaPay
 from decouple import config
 import requests
 import json
@@ -10,24 +16,37 @@ from authentification.token import verify_token
 from django.db.models import Sum
 from django.utils.timezone import now
 from datetime import timedelta
+from utils.send_email import send_emailB
+
+
 router = Router()
 
-#BASE_URL = "https://soleaspay.com/api/agent/sandbox/"
+# BASE_URL = "https://soleaspay.com/api/agent/sandbox/"
 BASE_URL = "https://soleaspay.com/api/"
 
 
-@router.get('paiement')
+@router.get("paiement")
 def getPayement(request):
     token = request.headers.get("Authorization").split(" ")[1]
     payload = verify_token(token)
-    e = Entreprise.objects.get(id = payload.get('entreprise_id'))
-    c = list(CHECKOUT.objects.filter(entreprise = e).values("produit__nom_produit","nom_client","status","email","type","pays_client","date"))
-    return {"status":200 , "data":c}
-
+    e = Entreprise.objects.get(id=payload.get("entreprise_id"))
+    c = list(
+        CHECKOUT.objects.filter(entreprise=e).values(
+            "produit__nom_produit",
+            "nom_client",
+            "status",
+            "email",
+            "type",
+            "pays_client",
+            "date",
+        )
+    )
+    return {"status": 200, "data": c}
 
 
 @router.post("checkout/user/{entreprise_slug}/{slug}", auth=None)
 def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSchema):
+    print("debut requette")
     entreprise = Entreprise.objects.get(slug=entreprise_slug)
     produit = Produit.objects.get(slug=slug)
     checkout = CHECKOUT.objects.create(
@@ -40,16 +59,17 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
         numero=data.numero,
         email=data.email,
         codeOtp=data.codeOtp,
+        orderId=data.orderId,
     )
     url = f"{BASE_URL}agent/bills"
-    order_id = checkout.slug
-    
+    order_id = data.orderId
+
     headers = {
         "x-api-key": config("X-API-KEY"),
         "operation": "2",
         "service": str(data.id_operateur),
         "Content-Type": "application/json",
-        "otp":data.codeOtp,
+        "otp": data.codeOtp,
     }
 
     if data.numero:
@@ -64,59 +84,37 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
         "order_id": order_id,
     }
     response = requests.post(url, headers=headers, data=json.dumps(payload))
-    print(response.text)
     response_data = json.loads(response.text)
     response_data["order_id"] = order_id
     print("-------------------------------")
     print("-------------------------------")
     print("-------------------------------")
-    print(response_data)
     if response_data.get("success") == False:
         checkout.status = "Echec"
         checkout.save()
-        PaiementEchoue.objects.create(
-            token=response_data.get("payToken"), checkout=checkout
-        )
+        token = response_data.get("payToken") or response_data.get("message")
+        PaiementEchoue.objects.create(token=token, checkout=checkout)
         return {
             "status": 400,
             "message": "Votre paiement a échoué. Merci de réessayer.",
         }
-    if response_data.get("success") == True:
-        checkout.status = "Reussi"
-        checkout.save()
-        return {
-            "status": 200,
-            "payId": response_data["data"]["payId"],
-            "amount": response_data["data"]["amount"],
-            "orderId": response_data["order_id"],
-        }
     if data.devise_client == "USD":
         payUrl = response_data["data"]["payLink"]
-        return {"status": 200, "url": payUrl}
-    return {"status":400}
+        return {"status": 201, "url": payUrl}
+    return {"status": 200}
+
 
 verify_url = "https://soleaspay.com/api/agent/verif-pay"
 
 
-@router.get("donwload", auth=None)
-def donwloadFile(request, id_operateur: str, amount: float, orderId: str, payId: str):
-    params = {"amount": amount, "orderId": orderId, "payId": payId}
-    headers = {
-        "x-api-key": config("X-API-KEY"),
-        "operation": "2",
-        "service": str(id_operateur),
-        "Content-Type": "application/json",
-    }
-    response = requests.get(verify_url, headers=headers, params=params)
-    result = response.json()
-    if result.get("success") == True:
-        data =  []
-        checkhout = CHECKOUT.objects.get(slug = orderId)
-        checkhout.reference = payId
-        checkhout.save()
+@router.get("verify_payment/{orderId}", auth=None)
+def verify_payment_router(request, orderId: str):
+    checkhout = CHECKOUT.objects.get(orderId=orderId)
+    if checkhout.status == "Reussi":
         produit = checkhout.produit
-        entreprise = Entreprise.objects.get(id = checkhout.entreprise.id)
-        compte = CompteBancaire.objects.get(entreprise = entreprise)
+        entreprise = Entreprise.objects.get(id=checkhout.entreprise.id)
+        compte = CompteBancaire.objects.get(entreprise=entreprise)
+        PaiementReussi.objects.create(checkout=checkhout)
         if produit.gratuit:
             compte.solde += 0
         elif produit.promotion:
@@ -125,137 +123,193 @@ def donwloadFile(request, id_operateur: str, amount: float, orderId: str, payId:
         else:
             compte.solde = float(produit.prix_produit)
             compte.save()
-        if produit.categorie_produit != 'lien':
-            files = Fichier.objects.filter(produit = produit.id)
-            for file in files:
-                data.append({
-                    'fichier':file.fichier.url
-                })
-            print('url du produit',data)
-            return {"type":'produit_digital','data':data}
-        else:
-            liens = Acce.objects.filter(slug = produit.slug).first()
-            print(liens)
-            return {"type":'lien','data':liens.lien}
+        return {"status": 200, "message": "votre produit a ete envoyer par email"}
+    else:
+        return {"status": 403}
+
+
+@router.get("donwload/{orderId}", auth=None)
+def donwloadFile(request, orderId: str):
+    data = []
+    checkhout = CHECKOUT.objects.get(orderId=orderId)
+    produit = checkhout.produit
+    if produit.categorie_produit != "lien":
+        files = Fichier.objects.filter(produit=produit.id)
+        for file in files:
+            data.append({"fichier": file.fichier.url})
+        print("url du produit", data)
+        return {"type": "produit_digital", "data": data}
+    else:
+        liens = Acce.objects.filter(slug=produit.slug).first()
+        print(liens)
+        return {"type": "lien", "data": liens.lien}
+    return 200
+
+
+@router.post("callback/payin", auth=None)
+def callbackPayin(request):
+    # Récupérer le header
+    header = request.headers
+    key = header.get("X-Private-Key")
+    print(header)
+    if key == config("PAYOUT_KEY"):
+        # Récupérer le contenu brut (Raw Content)
+        raw_content = json.loads(request.body)
+        print("status = ",raw_content.get("status"))
+        if raw_content.get("status") == "SUCCESS":
+            print("CALLBACK-------------------------------")
+            order_id = raw_content.get("externalRef")
+            checkout = CHECKOUT.objects.filter(orderId=order_id).first()
+            produit = checkout.produit
+            checkout.status = "Reussi"
+            checkout.reference = raw_content.get("internalRef")
+            checkout.save()
+            Historique.objects.create(
+                montant=raw_content.get("amount"),
+                devise=raw_content.get("currency"),
+                operation=raw_content.get("operation"),
+            )
+            # send email
+            url_produit = f"https://shop.op-markets.com/download/{checkout.id}/{order_id}"
+
+            subject = "Confirmation de votre achat sur Open Market"
+            username = checkout.nom_client
+            nom_produit = produit.nom_produit
+            recipient = checkout.email
+            send_emailB(subject, username, nom_produit, recipient , url_produit)
+            print('email envoyer')
+            # Traitez les données du webhook ici en utilisant le header et le contenu brut
+            """
+            {'Content-Length': '123', 'Content-Type': 'application/json', 'Host': '1665-129-0-189-44.ngrok-free.app', 'User-Agent': 'Symfony HttpClient/Curl', 'Accept': '*/*', 'Accept-Encoding': 'gzip', 'X-Forwarded-For': '209.159.155.171', 'X-Forwarded-Host': '1665-129-0-189-44.ngrok-free.app', 'X-Forwarded-Proto': 'https', 'X-Private-Key': 'nPPODj6dkvVzDBLOON1ck09JRBC8zvX33OfwMWFouiY'}
             
-        print("false payment")
-        print(result)
-    if result.get("success") == False:
-        return {'status':404 , 'message':'Aucun payment trouver'}
-    return 200 
+            {"status":"SUCCESS","internalRef":"MLS3969B","externalRef":"m6pv3uf7","amount":110,"currency":"XAF","operation":"PURCHASE"}
+            """
+            # Retournez une réponse appropriée au service de webhook
+            return {"message": "Webhook reçu avec succès"}
 
 
-@router.post('payOut')
+@router.post("payOut")
 def payOut(request, data: MySoleaPay):
     token = request.headers.get("Authorization").split(" ")[1]
     payload = verify_token(token)
     e = Entreprise.objects.get(id=payload.get("entreprise_id"))
-    compte = CompteBancaire.objects.get(entreprise = e)
+    compte = CompteBancaire.objects.get(entreprise=e)
     amount = data.amount
     solde = compte.solde
+    is_look = compte.bloque
     print(data)
-    print('amount' , amount)
-    if amount < 100:
+    print("amount", amount)
+    if amount < 1000:
+        return {"status": 403, "message": "Le montant minimum à retirer est de 1000."}
+    if is_look:
         return {
             "status": 403,
-            "message": "Le montant minimum à retirer est de 100."
+            "message": "Votre compte est bloqué. Contactez le service client.",
         }
-    print("somme du compte , = ",compte.solde)
-    if solde > 100 and amount <= solde:
+    print("somme du compte , = ", compte.solde)
+    if solde > 1000 and amount <= solde:
         if data.operator in [1, 2]:
             devise = "XAF"
         else:
             devise = "XOF"
         print(devise)
-            
+
         url = f"{BASE_URL}action/auth"
         payload = {
-            "public_apikey": config('X-API-KEY'),
-            "private_secretkey": config('PRIVATE_SECRET_KEY'),
+            "public_apikey": config("X-API-KEY"),
+            "private_secretkey": config("PRIVATE_SECRET_KEY"),
         }
         response = requests.request("POST", url, json=payload)
 
         response_data = json.loads(response.text)
         accestoken = response_data.get("access_token")
         print(accestoken)
-        if 'access_token' in response_data:
+        if "access_token" in response_data:
             url = "https://soleaspay.com/api/action/account/withdraw"
 
             headers = {
                 "operation": "4",
                 "service": str(data.operator),
-                "Authorization": "Bearer " + response_data['access_token'],
-                "Content-Type": "application/json"
+                "Authorization": "Bearer " + response_data["access_token"],
+                "Content-Type": "application/json",
             }
             data = {
                 "amount": float(data.amount),
                 "wallet": data.customer_number,
-                "currency":str(devise)
+                "currency": str(devise),
             }
 
             response = requests.post(url, headers=headers, data=json.dumps(data))
             result = response.json()
             print(result)
-            if result.get('code') == 200:
+            if result.get("code") == 200:
                 compte.solde -= float(amount)
                 compte.save()
-                return {"status":result.get('code') , "message": str(amount) +' ' + devise + " ont été retirés de votre compte. Merci de faire confiance à Open Market."}
+                Retrait.objects.create(compte=compte, montant=amount)
+                return {
+                    "status": result.get("code"),
+                    "message": str(amount)
+                    + " "
+                    + devise
+                    + " ont été retirés de votre compte. Merci de faire confiance à Open Market.",
+                }
             else:
                 return {
-                    "status": result.get('code'),
-                    "message": result.get('message', "Erreur lors du retrait.")
+                    "status": result.get("code"),
+                    "message": result.get("message", "Erreur lors du retrait."),
                 }
         else:
             return {
                 "status": 401,
-                "message": "Échec de l'authentification avec le service externe."
+                "message": "Échec de l'authentification avec le service externe.",
             }
     else:
-        if solde <= 100:
+        if solde <= 1000:
             return {
                 "status": 403,
-                "message": "Votre solde doit être supérieur à 100 pour cette opération."
+                "message": "Votre solde doit être supérieur à 1000 pour cette opération.",
             }
         elif amount > solde:
             return {
                 "status": 403,
-                "message": "Le montant à retirer est supérieur au solde du compte."
+                "message": "Le montant à retirer est supérieur au solde du compte.",
             }
 
 
-
-
-
-
-
-
-
-@router.get('total_vente')
+@router.get("total_vente")
 def totalVente(request):
     token = request.headers.get("Authorization").split(" ")[1]
     payload = verify_token(token)
     e = Entreprise.objects.get(id=payload.get("entreprise_id"))
-    compte = CompteBancaire.objects.get(entreprise = e)
-    
+    compte = CompteBancaire.objects.get(entreprise=e)
+
     # Total de toutes les ventes réussies
     total_all = CHECKOUT.objects.filter(entreprise=e, status="Reussi").count()
 
     # Total des ventes réussies pour aujourd'hui
     today = now().date()
-    total_today = CHECKOUT.objects.filter(entreprise=e, status="Reussi", date__date=today).count()
+    total_today = CHECKOUT.objects.filter(
+        entreprise=e, status="Reussi", date__date=today
+    ).count()
 
     # Total des ventes réussies pour ce mois-ci
     start_of_month = today.replace(day=1)
-    total_month = CHECKOUT.objects.filter(entreprise=e, status="Reussi", date__date__gte=start_of_month).count()
-    #Total des produit
-    produitv = Produit.objects.filter(entreprise = e, is_visible = True , supprime = False).count()
-    produit = Produit.objects.filter(entreprise = e , is_visible = False , supprime = False).count()
+    total_month = CHECKOUT.objects.filter(
+        entreprise=e, status="Reussi", date__date__gte=start_of_month
+    ).count()
+    # Total des produit
+    produitv = Produit.objects.filter(
+        entreprise=e, is_visible=True, supprime=False
+    ).count()
+    produit = Produit.objects.filter(
+        entreprise=e, is_visible=False, supprime=False
+    ).count()
     data = {
-        'totalVente': total_all,
-        'totalVente_jour': total_today,
-        'totalVente_mois': total_month,
-        'produitv':produitv,
-        'produitI':produit,
-        'soldes':compte.solde
+        "totalVente": total_all,
+        "totalVente_jour": total_today,
+        "totalVente_mois": total_month,
+        "produitv": produitv,
+        "produitI": produit,
+        "soldes": compte.solde,
     }
-    return {'status':200 , 'data':data}
+    return {"status": 200, "data": data}

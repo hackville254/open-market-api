@@ -67,6 +67,7 @@ class ModifyAcces(Schema):
 class CHECKOUTSchema(Schema):
     nom_client : str
     devise_client: str
+    orderId: str
     id_operateur: int
     type: Optional[str]
     pays_client: str
