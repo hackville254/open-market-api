@@ -12,3 +12,17 @@ git remote add origin https://github.com/hackville254/open-market-api.git
 git branch -M main
 git push -u origin main
 
+# Assurez-vous que vous êtes sur la branche principale
+git checkout main
+
+# Mettez à jour la branche principale avec les dernières modifications du dépôt distant
+git pull origin main
+
+# Créez une nouvelle branche et basculez dessus
+git checkout -b nom-de-la-nouvelle-branche
+
+# Ajouter les modifications à l'index
+git add .
+
+# Valider les modifications
+git commit -m "Description des modifications"
