@@ -25,4 +25,7 @@ git checkout -b nom-de-la-nouvelle-branche
 git add .
 
 # Valider les modifications
-git commit -m "Description des modifications"
+git commit -m "Fin de la premiere version fonctionnel"
+
+
+git push origin v1

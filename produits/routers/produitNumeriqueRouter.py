@@ -1,11 +1,13 @@
+from django.db.models.functions import TruncMonth
 import json
 from ninja import Router, UploadedFile, Form, File
 from typing import List
 from ninja.errors import HttpError
-
+from datetime import datetime, timedelta
+from django.db.models import Count, Sum
 from authentification.models import Entreprise
 from authentification.token import verify_token
-from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit
+from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, Visite, CHECKOUT
 from ..schemas import (
     ModifyProduitDigitalSCHEMA,
     ProduitNumeriqueSchema,
@@ -14,6 +16,8 @@ from ..schemas import (
 )
 from typing import List, Optional
 from django.http import JsonResponse
+from utils.get_ip_client import *
+from utils.get_geo_data import *
 
 router = Router()
 
@@ -61,15 +65,287 @@ def get_by_slug(request, slug: str):
 @router.get("getby/{slug}/user", auth=None)
 def get_by_slug_by(request, slug: str):
     try:
+        client_ip = get_client_ip(request)
+        geo_data = get_geo_data(client_ip)
+        print(geo_data)
         token = request.headers
         produit = list(Produit.objects.filter(slug=slug , is_visible = True , supprime = False).values())
-        produit[0]['image_presentation'] = Produit.objects.get(slug=slug).image_presentation.url
+        p = Produit.objects.get(slug=slug)
+        produit[0]['image_presentation'] = p.image_presentation.url
+        entreprise = Entreprise.objects.get(nom_entreprise = p.entreprise)
+        # Vérifiez si une visite avec la même IP existe déjà pour l'entreprise
+        if not Visite.objects.filter(
+            entreprise=entreprise, ip_client=client_ip , produit = p
+        ).exists():
+            Visite.objects.create(
+                entreprise=entreprise,
+                ip_client=client_ip,
+                produit=p,
+                region=geo_data["region"],
+                pays=geo_data["country"],
+                ville=geo_data["city"],
+            )
         return {"status": 200, "produit": produit}
     except Exception as e:
         return HttpError(message="Erreur interne du serveur", status_code=500)
 
 
+# VISITE
+##############
+###########
+######
+@router.get("/monthly_stats")
+def get_monthly_stats(request):
+    try:
+        token = request.headers.get("Authorization").split(" ")[1]
+        payload = verify_token(token)
+        entreprise_id = payload.get("entreprise_id")
+        entreprise = Entreprise.objects.get(id=entreprise_id)
 
+        # Déterminer les dates du mois courant
+        today = datetime.today()
+        first_day_of_month = today.replace(day=1)
+        current_day_of_month = today.day
+
+        # Récupérer les visites et les ventes du mois jusqu'à aujourd'hui
+        visits = Visite.objects.filter(
+            date__range=[first_day_of_month, today], entreprise=entreprise
+        )
+        sales = CHECKOUT.objects.filter(
+            date__range=[first_day_of_month, today],
+            entreprise=entreprise,
+            status="Reussi",
+        )
+
+        # Calculer les statistiques de visites par jour
+        visit_stats = (
+            visits.extra({"day": "date(date)"})
+            .values("day")
+            .annotate(count=Count("id"))
+        )
+
+        # Calculer les statistiques de ventes par jour
+        sales_stats = sales.values("date__date").annotate(
+            sum=Sum("produit__prix_produit")
+        )  # Utilisation de 'produit__prix_produit'
+
+        # Préparer les données pour chaque jour du mois jusqu'à aujourd'hui
+        stats = []
+        for day in range(1, current_day_of_month + 1):
+            date = first_day_of_month + timedelta(days=day - 1)
+            day_str = date.strftime("%Y-%m-%d")
+            day_visits = next(
+                (v["count"] for v in visit_stats if v["day"] == day_str), 0
+            )
+            day_sales = next(
+                (
+                    s["sum"]
+                    for s in sales_stats
+                    if s["date__date"].strftime("%Y-%m-%d") == day_str
+                ),
+                0,
+            )
+            stats.append({"day": str(day), "sales": day_sales, "visits": day_visits})
+
+        return {"status": 200, "data": stats}
+    except Entreprise.DoesNotExist:
+        return {"status": 404, "message": "Entreprise non trouvée"}
+    except Exception as e:
+        return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
+
+###########
+@router.get("/yearly_stats")
+def get_yearly_stats(request):
+    try:
+        # Récupérer le token et valider l'entreprise associée
+        token = request.headers.get("Authorization").split(" ")[1]
+        payload = verify_token(token)
+        entreprise_id = payload.get("entreprise_id")
+        entreprise = Entreprise.objects.get(id=entreprise_id)
+
+        # Déterminer les dates de début de l'année courante et du jour actuel
+        today = datetime.today()
+        first_day_of_year = datetime(today.year, 1, 1)
+        current_month = today.month
+
+        # Récupérer les visites et les ventes de l'année courante jusqu'au mois actuel inclus
+        visits = Visite.objects.filter(
+            date__range=[first_day_of_year, today], entreprise=entreprise
+        )
+        sales = CHECKOUT.objects.filter(
+            date__range=[first_day_of_year, today],
+            entreprise=entreprise,
+            status="Reussi",
+        )
+
+        # Calculer les statistiques de visites par mois
+        visit_stats = (
+            visits.annotate(month=TruncMonth("date"))
+            .values("month")
+            .annotate(count=Count("id"))
+            .values("month", "count")
+        )
+
+        # Calculer les statistiques de ventes par mois
+        sales_stats = (
+            sales.annotate(month=TruncMonth("date"))
+            .values("month")
+            .annotate(sum=Sum("produit__prix_produit"))
+            .values("month", "sum")
+        )
+
+        # Préparer les noms des mois pour l'affichage
+        month_names = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ]
+
+        # Préparer les données pour chaque mois jusqu'au mois actuel inclus
+        stats = []
+        for month in range(1, current_month + 1):
+            month_str = f"{today.year}-{month:02d}"
+            month_visits = next(
+                (
+                    v["count"]
+                    for v in visit_stats
+                    if v["month"].strftime("%Y-%m") == month_str
+                ),
+                0,
+            )
+            month_sales = next(
+                (
+                    s["sum"]
+                    for s in sales_stats
+                    if s["month"].strftime("%Y-%m") == month_str
+                ),
+                0,
+            )
+            stats.append(
+                {
+                    "month": month_names[month - 1],
+                    "sales": month_sales,
+                    "visits": month_visits,
+                }
+            )
+
+        return {"status": 200, "data": stats}
+    except Entreprise.DoesNotExist:
+        return {"status": 404, "message": "Entreprise non trouvée"}
+    except Exception as e:
+        return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
+
+#############
+@router.get("/sales_evolution")
+def get_sales_evolution(request):
+    try:
+        # Récupérer le token et valider l'entreprise associée
+        token = request.headers.get("Authorization").split(" ")[1]
+        payload = verify_token(token)
+        entreprise_id = payload.get("entreprise_id")
+        entreprise = Entreprise.objects.get(id=entreprise_id)
+
+        # Déterminer les dates de début de l'année courante et du jour actuel
+        today = datetime.today()
+        first_day_of_year = datetime(today.year, 1, 1)
+        current_month = today.month
+
+        # Récupérer les ventes de l'année courante jusqu'au mois actuel inclus
+        sales = CHECKOUT.objects.filter(
+            date__range=[first_day_of_year, today],
+            entreprise=entreprise,
+            status="Reussi",
+        )
+
+        # Calculer les statistiques de ventes par mois
+        sales_stats = (
+            sales.annotate(month=TruncMonth("date"))
+            .values("month")
+            .annotate(sum=Sum("produit__prix_produit"))
+            .values("month", "sum")
+        )
+
+        # Préparer les noms des mois pour l'affichage
+        month_names = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ]
+
+        # Préparer les données pour chaque mois jusqu'au mois actuel inclus
+        stats = []
+        for month in range(1, current_month + 1):
+            month_str = f"{today.year}-{month:02d}"
+            month_sales = next(
+                (
+                    s["sum"]
+                    for s in sales_stats
+                    if s["month"].strftime("%Y-%m") == month_str
+                ),
+                0,
+            )
+            stats.append(
+                {
+                    "month": month_names[month - 1],
+                    "sales": month_sales,
+                }
+            )
+
+        return {"status": 200, "data": stats}
+    except Entreprise.DoesNotExist:
+        return {"status": 404, "message": "Entreprise non trouvée"}
+    except Exception as e:
+        return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
+###################
+@router.get("/top_selling_products")
+def get_top_selling_products(request):
+    try:
+        # Récupérer le token et valider l'entreprise associée
+        token = request.headers.get("Authorization").split(" ")[1]
+        payload = verify_token(token)
+        entreprise_id = payload.get("entreprise_id")
+        entreprise = Entreprise.objects.get(id=entreprise_id)
+
+        # Récupérer les ventes par produit pour l'entreprise
+        product_sales = (
+            CHECKOUT.objects.filter(entreprise=entreprise, status="Reussi")
+            .values("produit__nom_produit")
+            .annotate(total_sales=Sum("produit__prix_produit"))
+            .order_by("-total_sales")
+        )
+
+        # Limiter les résultats aux 11 produits les plus vendus
+        top_products = product_sales[:11]
+
+        # Préparer les données dans le format requis
+        data = [
+            {"product": item["produit__nom_produit"], "sales": item["total_sales"]}
+            for item in top_products
+        ]
+
+        return {"status": 200, "data": data}
+    except Entreprise.DoesNotExist:
+        return {"status": 404, "message": "Entreprise non trouvée"}
+    except Exception as e:
+        return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
 
 
 # PRODUIT NUMERIQUE

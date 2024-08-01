@@ -44,6 +44,20 @@ class Fichier(models.Model):
     fichier = models.FileField()
 
 
+class Visite(models.Model):
+    entreprise = models.ForeignKey(Entreprise, on_delete=models.CASCADE)
+    produit = models.ForeignKey(Produit, on_delete=models.CASCADE , null=True)
+    ip_client = models.GenericIPAddressField()
+    region = models.CharField(max_length=150 , null = True) 
+    pays = models.CharField(max_length=150 , null = True) 
+    ville = models.CharField(max_length=150, null=True)
+    date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = ("Visite")
+        verbose_name_plural = ("Visites")
+
+
 class ProduitNumerique(Produit):
     type = models.CharField(
         ("Pour specifier le type de document"), max_length=50)
@@ -51,16 +65,6 @@ class ProduitNumerique(Produit):
     class Meta:
         verbose_name = 'Produit Numerique'
         verbose_name_plural = 'Produit Numeriques'
-
-
-class VisiteProduitNumerique(models.Model):
-    produit = models.ForeignKey(ProduitNumerique, on_delete=models.CASCADE)
-    visite = models.IntegerField(default=1)
-    date = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Visite Produit Numerique"
-        verbose_name_plural = "Visites Produits Numeriques"
 
 
 class Livre(Produit):
@@ -73,15 +77,6 @@ class Livre(Produit):
         verbose_name_plural = 'Livres'
 
 
-class VisiteLivre(models.Model):
-    produit = models.ForeignKey(Livre, on_delete=models.CASCADE)
-    visite = models.IntegerField(default=1)
-    date = models.DateTimeField(auto_now_add=True)
-    class Meta:
-        verbose_name = "Visite Livre"
-        verbose_name_plural = "Visites Livres"
-
-
 class Acce(Produit):  # lien pour acceder a un evenement,une invitation...
     lien = models.URLField(max_length=500)
     #delais = models.DateTimeField() #Delais de validiter du lien
@@ -89,15 +84,6 @@ class Acce(Produit):  # lien pour acceder a un evenement,une invitation...
         verbose_name = 'Acce'
         verbose_name_plural = 'Acces'
 
-
-class VisiteAcces(models.Model):
-    produit = models.ForeignKey(Acce, on_delete=models.CASCADE)
-    visite = models.IntegerField(default=1)
-    date = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Visite Acce"
-        verbose_name_plural = "Visites Acces"
 
 class CHECKOUT(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

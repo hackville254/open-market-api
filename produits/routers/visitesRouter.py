@@ -1,4 +1,4 @@
-from ninja import Router
+""" from ninja import Router
 from ninja.errors import HttpError
 
 from authentification.models import Entreprise
@@ -84,3 +84,4 @@ def recupere_les_Visite(request):
         })
 
     return results
+ """

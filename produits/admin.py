@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import CHECKOUT,Fichier,Livre, ProduitNumerique,Acce,VisiteAcces,VisiteLivre,VisiteProduitNumerique
+from .models import CHECKOUT, Fichier, Livre, ProduitNumerique, Acce, Visite
+
 # Register your models here.
 
 from django.contrib import admin
@@ -31,11 +32,17 @@ class CHECKOUTAdmin(admin.ModelAdmin):
 class FichierAdmin(admin.ModelAdmin):
     list_display = ('produit',)
 
-admin.site.register(CHECKOUT , CHECKOUTAdmin)
+
+class VisiteAdmin(admin.ModelAdmin):
+    list_display = ("entreprise", "ip_client", "date")
+    search_fields = ("entreprise__nom_entreprise",)
+    list_filter = ("date", "entreprise")
+    date_hierarchy = "date"
+
+
+admin.site.register(Visite, VisiteAdmin)
+admin.site.register(CHECKOUT, CHECKOUTAdmin)
 admin.site.register(ProduitNumerique, ProduitNumeriqueAdmin)
 admin.site.register(Livre, LivreAdmin)
 admin.site.register(Acce, AcceAdmin)
-admin.site.register(VisiteAcces)
-admin.site.register(VisiteLivre)    
-admin.site.register(VisiteProduitNumerique)
 admin.site.register(Fichier,FichierAdmin)
