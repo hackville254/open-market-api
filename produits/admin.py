@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CHECKOUT, Fichier, Livre, ProduitNumerique, Acce, Visite
+from .models import CHECKOUT, Fichier, Livre, ProduitNumerique, Acce
 
 # Register your models here.
 
@@ -33,14 +33,7 @@ class FichierAdmin(admin.ModelAdmin):
     list_display = ('produit',)
 
 
-class VisiteAdmin(admin.ModelAdmin):
-    list_display = ("entreprise", "ip_client", "date")
-    search_fields = ("entreprise__nom_entreprise",)
-    list_filter = ("date", "entreprise")
-    date_hierarchy = "date"
 
-
-admin.site.register(Visite, VisiteAdmin)
 admin.site.register(CHECKOUT, CHECKOUTAdmin)
 admin.site.register(ProduitNumerique, ProduitNumeriqueAdmin)
 admin.site.register(Livre, LivreAdmin)
