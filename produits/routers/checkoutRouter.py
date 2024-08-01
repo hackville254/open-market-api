@@ -20,8 +20,8 @@ from utils.send_email import send_emailB
 
 router = Router()
 
-BASE_URL = "https://soleaspay.com/api/agent/sandbox"
-# BASE_URL = "https://soleaspay.com/api/"
+# BASE_URL = "https://soleaspay.com/api/agent/sandbox"
+BASE_URL = "https://soleaspay.com/api/"
 
 
 @router.get("paiement")
@@ -60,8 +60,8 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
         codeOtp=data.codeOtp,
         orderId=data.orderId,
     )
-    #url = f"{BASE_URL}agent/bills"
-    url = f"{BASE_URL}"
+    url = f"{BASE_URL}agent/bills"
+    #url = f"{BASE_URL}"
     order_id = data.orderId
 
     headers = {
