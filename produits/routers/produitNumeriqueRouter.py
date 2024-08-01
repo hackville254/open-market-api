@@ -74,17 +74,17 @@ def get_by_slug_by(request, slug: str):
         produit[0]['image_presentation'] = p.image_presentation.url
         entreprise = Entreprise.objects.get(nom_entreprise = p.entreprise)
         # Vérifiez si une visite avec la même IP existe déjà pour l'entreprise
-        if not Visite.objects.filter(
-            entreprise=entreprise, ip_client=client_ip , produit = p
-        ).exists():
-            Visite.objects.create(
-                entreprise=entreprise,
-                ip_client=client_ip,
-                produit=p,
-                region=geo_data["region"],
-                pays=geo_data["country"],
-                ville=geo_data["city"],
-            )
+        #if not Visite.objects.filter(
+        #    entreprise=entreprise, ip_client=client_ip , produit = p
+        #).exists():
+        #   Visite.objects.create(
+        #        entreprise=entreprise,
+        #       ip_client=client_ip,
+        #        produit=p,
+        #       region=geo_data["region"],
+        #        pays=geo_data["country"],
+        #       ville=geo_data["city"],
+        #    )
         return {"status": 200, "produit": produit}
     except Exception as e:
         return HttpError(message="Erreur interne du serveur", status_code=500)
