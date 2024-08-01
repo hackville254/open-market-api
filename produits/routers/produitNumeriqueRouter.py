@@ -355,7 +355,6 @@ def get_top_selling_products(request):
 
 # Ajouter produit numerique
 
-
 @router.post("produit_numerique")
 def ajouter_produit_numerique(
     request,
