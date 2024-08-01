@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
 
+from authentification.currency import obtenir_monnaie
 from banque.models import CompteBancaire
 from .code import generer_code
 from .models import Entreprise
@@ -159,6 +160,8 @@ def cree_entreprise(request, data: Form[EntrepriseSchema], logo: UploadedFile = 
             print('entreprise = ',new_company)
             c = CompteBancaire.objects.create(entreprise=new_company)
             print(c)
+            new_company.devise = obtenir_monnaie(data.pays)
+            new_company.save()
             return {"status": 200,"message": "Entreprise créée avec succès", "entreprise": EntrepriseSchema.from_orm(new_company)}
 
 

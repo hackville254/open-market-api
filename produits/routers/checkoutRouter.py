@@ -15,14 +15,13 @@ import json
 from authentification.token import verify_token
 from django.db.models import Sum
 from django.utils.timezone import now
-from datetime import timedelta
+from datetime import timedelta,datetime
 from utils.send_email import send_emailB
-
 
 router = Router()
 
-# BASE_URL = "https://soleaspay.com/api/agent/sandbox/"
-BASE_URL = "https://soleaspay.com/api/"
+BASE_URL = "https://soleaspay.com/api/agent/sandbox"
+# BASE_URL = "https://soleaspay.com/api/"
 
 
 @router.get("paiement")
@@ -61,7 +60,8 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
         codeOtp=data.codeOtp,
         orderId=data.orderId,
     )
-    url = f"{BASE_URL}agent/bills"
+    #url = f"{BASE_URL}agent/bills"
+    url = f"{BASE_URL}"
     order_id = data.orderId
 
     headers = {
@@ -98,7 +98,7 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
             "status": 400,
             "message": "Votre paiement a échoué. Merci de réessayer.",
         }
-    if data.devise_client == "USD":
+    if response_data["data"]["payLink"]:
         payUrl = response_data["data"]["payLink"]
         return {"status": 201, "url": payUrl}
     return {"status": 200}
@@ -216,17 +216,16 @@ def payOut(request, data: MySoleaPay):
         compte.solde -= float(amount)
         compte.save()
         Retrait.objects.create(compte=compte, montant=amount)
+
         url = f"{BASE_URL}action/auth"
         payload = {
             "public_apikey": config("X-API-KEY"),
             "private_secretkey": config("PRIVATE_SECRET_KEY"),
         }
-        
+
         response = requests.request("POST", url, json=payload)
 
         response_data = json.loads(response.text)
-        accestoken = response_data.get("access_token")
-        print(accestoken)
         if "access_token" in response_data:
             url = "https://soleaspay.com/api/action/account/withdraw"
 
@@ -283,33 +282,83 @@ def totalVente(request):
     e = Entreprise.objects.get(id=payload.get("entreprise_id"))
     compte = CompteBancaire.objects.get(entreprise=e)
 
+    today = datetime.now().date()
+    start_of_month = today.replace(day=1)
+
+    # Calcul du début du mois précédent
+    start_of_last_month = (start_of_month - timedelta(days=1)).replace(day=1)
+    end_of_last_month = start_of_month - timedelta(days=1)
+
     # Total de toutes les ventes réussies
-    total_all = CHECKOUT.objects.filter(entreprise=e, status="Reussi").count()
+    total_all_count = CHECKOUT.objects.filter(entreprise=e, status="Reussi").count()
+    total_all_sum = CHECKOUT.objects.filter(entreprise=e, status="Reussi").aggregate(
+        total=Sum("produit__prix_produit")
+    )
+    total_all = total_all_sum["total"] or 0
 
     # Total des ventes réussies pour aujourd'hui
-    today = now().date()
-    total_today = CHECKOUT.objects.filter(
+    total_today_count = CHECKOUT.objects.filter(
         entreprise=e, status="Reussi", date__date=today
     ).count()
+    total_today_sum = CHECKOUT.objects.filter(
+        entreprise=e, status="Reussi", date__date=today
+    ).aggregate(total=Sum("produit__prix_produit"))
+    total_today = total_today_sum["total"] or 0
 
     # Total des ventes réussies pour ce mois-ci
-    start_of_month = today.replace(day=1)
-    total_month = CHECKOUT.objects.filter(
+    total_month_count = CHECKOUT.objects.filter(
         entreprise=e, status="Reussi", date__date__gte=start_of_month
     ).count()
-    # Total des produit
+    total_month_sum = CHECKOUT.objects.filter(
+        entreprise=e, status="Reussi", date__date__gte=start_of_month
+    ).aggregate(total=Sum("produit__prix_produit"))
+    total_month = total_month_sum["total"] or 0
+
+    # Total des ventes réussies pour le mois précédent
+    total_last_month_count = CHECKOUT.objects.filter(
+        entreprise=e,
+        status="Reussi",
+        date__date__gte=start_of_last_month,
+        date__date__lte=end_of_last_month,
+    ).count()
+    total_last_month_sum = CHECKOUT.objects.filter(
+        entreprise=e,
+        status="Reussi",
+        date__date__gte=start_of_last_month,
+        date__date__lte=end_of_last_month,
+    ).aggregate(total=Sum("produit__prix_produit"))
+    total_last_month = total_last_month_sum["total"] or 0
+
+    # Calcul de la croissance des ventes (en pourcentage) par rapport au mois précédent
+    croissance_ventes = 0
+    if total_last_month > 0:
+        croissance_ventes = ((total_month - total_last_month) / total_last_month) * 100
+
+    # Total des produits visibles et non visibles
     produitv = Produit.objects.filter(
         entreprise=e, is_visible=True, supprime=False
     ).count()
     produit = Produit.objects.filter(
         entreprise=e, is_visible=False, supprime=False
     ).count()
+
+    # Formatage des sommes
+    def format_number(value):
+        return "{:,.0f}".format(value).replace(",", " ")
+
     data = {
-        "totalVente": total_all,
-        "totalVente_jour": total_today,
-        "totalVente_mois": total_month,
+        "totalVente": total_all_count,
+        "totalVente_sum": format_number(total_all),
+        "totalVente_jour": total_today_count,
+        "totalVente_jour_sum": format_number(total_today),
+        "totalVente_mois": total_month_count,
+        "totalVente_mois_sum": format_number(total_month),
+        "totalVente_mois_precedent": total_last_month_count,
+        "totalVente_mois_precedent_sum": format_number(total_last_month),
+        "croissance_ventes": f"{croissance_ventes:.2f}%",
         "produitv": produitv,
         "produitI": produit,
         "soldes": compte.solde,
     }
+    print(data)
     return {"status": 200, "data": data}
