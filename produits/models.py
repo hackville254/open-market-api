@@ -44,7 +44,7 @@ class Fichier(models.Model):
     fichier = models.FileField()
 
 
-class Visite(models.Model):
+""" class Visite(models.Model):
     entreprise = models.ForeignKey(Entreprise, on_delete=models.CASCADE)
     produit = models.ForeignKey(Produit, on_delete=models.CASCADE , null=True)
     ip_client = models.GenericIPAddressField()
@@ -56,7 +56,7 @@ class Visite(models.Model):
     class Meta:
         verbose_name = ("Visite")
         verbose_name_plural = ("Visites")
- 
+ """
 
 class ProduitNumerique(Produit):
     type = models.CharField(
