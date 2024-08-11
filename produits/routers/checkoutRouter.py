@@ -84,6 +84,7 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
         "order_id": order_id,
     }
     response = requests.post(url, headers=headers, data=json.dumps(payload))
+    print(response.text)
     response_data = json.loads(response.text)
     response_data["order_id"] = order_id
     print("-------------------------------")
@@ -100,6 +101,7 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
         }
     if response_data["data"]["payLink"]:
         payUrl = response_data["data"]["payLink"]
+        print(payUrl)
         return {"status": 201, "url": payUrl}
     return {"status": 200}
 
