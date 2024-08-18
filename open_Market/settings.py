@@ -20,20 +20,37 @@ TEMPLATE_DIR = BASE_DIR/'templates'
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
+#     DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 # SECURITY WARNING: keep the secret key used in production secret!
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 if DEBUG:
     ALLOWED_HOSTS = ['*']
     SECRET_KEY = 'django-insecure-6z7e%usrv(-r_t3+#*f30=ziw+*1=i0m^6_pyp_h7#8^tb=w)h'
     CORS_ALLOW_ALL_ORIGINS = True
     CORS_ALLOWED_ORIGINS = ["http://*",]
+#     DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+#    }
     DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': "django.db.backends.postgresql",
+        'NAME': "postgres",
+        'USER': "postgres",
+        'PASSWORD': "1234",
+        'HOST': "localhost",
+        'PORT': 5432,
     }
 }
 else:
