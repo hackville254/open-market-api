@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from django.db.models import Count, Sum
 from authentification.models import Entreprise
 from authentification.token import verify_token
-from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, CHECKOUT
+from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, CHECKOUT , Visite
 from ..schemas import (
     ModifyProduitDigitalSCHEMA,
     ProduitNumeriqueSchema,
@@ -94,7 +94,7 @@ def get_by_slug_by(request, slug: str):
 ##############
 ###########
 ######
-""" @router.get("/monthly_stats")
+@router.get("/monthly_stats")
 def get_monthly_stats(request):
     try:
         token = request.headers.get("Authorization").split(" ")[1]
@@ -152,9 +152,9 @@ def get_monthly_stats(request):
         return {"status": 404, "message": "Entreprise non trouvée"}
     except Exception as e:
         return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
- """
+ 
 ###########
-""" @router.get("/yearly_stats")
+@router.get("/yearly_stats")
 def get_yearly_stats(request):
     try:
         # Récupérer le token et valider l'entreprise associée
@@ -242,7 +242,7 @@ def get_yearly_stats(request):
     except Entreprise.DoesNotExist:
         return {"status": 404, "message": "Entreprise non trouvée"}
     except Exception as e:
-        return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"} """
+        return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
 
 #############
 @router.get("/sales_evolution")
