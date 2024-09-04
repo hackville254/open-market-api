@@ -64,6 +64,11 @@ class ModifyAcces(Schema):
     delais: Optional[str]
     # Ajoutez d'autres champs selon vos besoins
 
+
+class ErrorResponse(BaseModel):
+    message: str
+    status_code: int
+
 class CHECKOUTSchema(Schema):
     nom_client : str
     devise_client: str

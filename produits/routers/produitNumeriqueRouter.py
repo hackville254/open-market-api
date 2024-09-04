@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models.functions import TruncMonth
 import json
 from ninja import Router, UploadedFile, Form, File
@@ -9,6 +10,7 @@ from authentification.models import Entreprise
 from authentification.token import verify_token
 from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, CHECKOUT, Visite, VisiteMultiple
 from ..schemas import (
+    ErrorResponse,
     ModifyProduitDigitalSCHEMA,
     ProduitNumeriqueSchema,
     LivreSchema,
@@ -62,50 +64,62 @@ def get_by_slug(request, slug: str):
 
 
 # GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG POUR LE CHECKOUT
+
+
 @router.get("getby/{slug}/user", auth=None)
 def get_by_slug_by(request, slug: str):
     try:
-        client_ip = get_client_ip(request)
-        geo_data = get_geo_data(client_ip)
-        print(geo_data)
-        token = request.headers
+        print('----------------------------')
+        # Récupère l'adresse IP du client uniquement si DEBUG est désactivé
+        if not settings.DEBUG:
+            client_ip = get_client_ip(request)
+            geo_data = get_geo_data(client_ip)
+            print(geo_data)
+        else:
+            client_ip = None
+            geo_data = None
+        
         produit = list(Produit.objects.filter(
             slug=slug, is_visible=True, supprime=False).values())
         p = Produit.objects.get(slug=slug)
         produit[0]['image_presentation'] = p.image_presentation.url
         entreprise = Entreprise.objects.get(nom_entreprise=p.entreprise)
-        today = timezone.now().date()  # Obtient la date actuelle
-        # Vérifiez si une visite avec la même IP existe déjà pour l'entreprise
-        if not Visite.objects.filter(
-           entreprise=entreprise, ip_client=client_ip, produit=p, date__date=today
-           ).exists():
+        today = datetime.now().date()  # Obtient la date actuelle
+        print(produit)
+        
+        # Enregistre la visite uniquement si l'adresse IP est présente
+        if client_ip and not Visite.objects.filter(
+            entreprise=entreprise, ip_client=client_ip, produit=p, date__date=today
+        ).exists():
             Visite.objects.create(
                 entreprise=entreprise,
                 ip_client=client_ip,
                 produit=p,
-                region=geo_data["region"],
-                pays=geo_data["country"],
-                ville=geo_data["city"],
+                region=geo_data["region"] if geo_data else None,
+                pays=geo_data["country"] if geo_data else None,
+                ville=geo_data["city"] if geo_data else None,
             )
             
-        # Enregistrer toutes les visites
-        VisiteMultiple.objects.create(
-            entreprise=entreprise,
-            ip_client=client_ip,
-            produit=p,
-            region=geo_data["region"],
-            pays=geo_data["country"],
-            ville=geo_data["city"]
-        )
+        # Enregistre toutes les visites si l'adresse IP est présente
+        if client_ip:
+            VisiteMultiple.objects.create(
+                entreprise=entreprise,
+                ip_client=client_ip,
+                produit=p,
+                region=geo_data["region"] if geo_data else None,
+                pays=geo_data["country"] if geo_data else None,
+                ville=geo_data["city"] if geo_data else None
+            )
         return {"status": 200, "produit": produit}
     except Exception as e:
-        return HttpError(message="Erreur interne du serveur", status_code=500)
-
-
+        # Renvoyer une réponse JSON en cas d'erreur
+        return ErrorResponse(message="Erreur interne du serveur", status_code=500)
 # VISITE
 ##############
 ###########
 ######
+
+
 @router.get("/monthly_stats")
 def get_monthly_stats(request):
     try:
