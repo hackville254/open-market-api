@@ -50,6 +50,8 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
     produit = Produit.objects.get(slug=slug)
     checkout = CHECKOUT.objects.create(
         produit=produit,
+        prix_produit = produit.prix_produit,
+        prix_client = data.montant,
         entreprise=entreprise,
         nom_client=data.nom_client,
         devise_client=data.devise_client,

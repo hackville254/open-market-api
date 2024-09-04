@@ -87,7 +87,7 @@ class CompteBancaireAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Informations de suivi",
+            "Informations de Suivi",
             {
                 "fields": ("date_modification", "date"),
                 "classes": ("collapse",),
@@ -95,17 +95,33 @@ class CompteBancaireAdmin(admin.ModelAdmin):
         ),
     )
 
-    # def get_queryset(self, request):
-    #     qs = super().get_queryset(request)
-    #     # Exclure les comptes bancaires supprimés de la liste par défaut
-    #     return qs.filter(supprime=False)
-    # Méthode pour obtenir le nom de l'entreprise associée à chaque compte bancaire
     def get_nom_entreprise(self, obj):
         return obj.entreprise.nom_entreprise
 
-    # Nom à afficher dans l'en-tête de la colonne
     get_nom_entreprise.short_description = "Nom de l'entreprise"
+
     ordering = ("-date",)
+    
+    # Actions personnalisées
+    actions = ['block_accounts', 'unblock_accounts']
+
+    def block_accounts(self, request, queryset):
+        """
+        Bloque les comptes bancaires sélectionnés.
+        """
+        updated_count = queryset.update(bloque=True)
+        self.message_user(request, f"{updated_count} comptes bancaires bloqués.")
+
+    block_accounts.short_description = "Bloquer les comptes bancaires sélectionnés"
+
+    def unblock_accounts(self, request, queryset):
+        """
+        Débloque les comptes bancaires sélectionnés.
+        """
+        updated_count = queryset.update(bloque=False)
+        self.message_user(request, f"{updated_count} comptes bancaires débloqués.")
+
+    unblock_accounts.short_description = "Débloquer les comptes bancaires sélectionnés"
 
 
 @admin.register(Transaction)

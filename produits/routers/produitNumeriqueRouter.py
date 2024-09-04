@@ -3,11 +3,11 @@ import json
 from ninja import Router, UploadedFile, Form, File
 from typing import List
 from ninja.errors import HttpError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from django.db.models import Count, Sum
 from authentification.models import Entreprise
 from authentification.token import verify_token
-from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, CHECKOUT , Visite
+from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, CHECKOUT, Visite, VisiteMultiple
 from ..schemas import (
     ModifyProduitDigitalSCHEMA,
     ProduitNumeriqueSchema,
@@ -49,7 +49,7 @@ def recuperer_tout_les_produits_une_entrepise(request):
     return JsonResponse(lists_produits, safe=False)
 
 
-#######GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG
+# GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG
 @router.get("getby/{slug}")
 def get_by_slug(request, slug: str):
     try:
@@ -61,7 +61,7 @@ def get_by_slug(request, slug: str):
         return HttpError(message="Erreur interne du serveur", status_code=500)
 
 
-#######GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG POUR LE CHECKOUT
+# GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG POUR LE CHECKOUT
 @router.get("getby/{slug}/user", auth=None)
 def get_by_slug_by(request, slug: str):
     try:
@@ -69,22 +69,34 @@ def get_by_slug_by(request, slug: str):
         geo_data = get_geo_data(client_ip)
         print(geo_data)
         token = request.headers
-        produit = list(Produit.objects.filter(slug=slug , is_visible = True , supprime = False).values())
+        produit = list(Produit.objects.filter(
+            slug=slug, is_visible=True, supprime=False).values())
         p = Produit.objects.get(slug=slug)
         produit[0]['image_presentation'] = p.image_presentation.url
-        entreprise = Entreprise.objects.get(nom_entreprise = p.entreprise)
+        entreprise = Entreprise.objects.get(nom_entreprise=p.entreprise)
+        today = timezone.now().date()  # Obtient la date actuelle
         # Vérifiez si une visite avec la même IP existe déjà pour l'entreprise
         if not Visite.objects.filter(
-           entreprise=entreprise, ip_client=client_ip , produit = p
-        ).exists():
-          Visite.objects.create(
-               entreprise=entreprise,
-              ip_client=client_ip,
-               produit=p,
-              region=geo_data["region"],
-               pays=geo_data["country"],
-              ville=geo_data["city"],
-           )
+           entreprise=entreprise, ip_client=client_ip, produit=p, date__date=today
+           ).exists():
+            Visite.objects.create(
+                entreprise=entreprise,
+                ip_client=client_ip,
+                produit=p,
+                region=geo_data["region"],
+                pays=geo_data["country"],
+                ville=geo_data["city"],
+            )
+            
+        # Enregistrer toutes les visites
+        VisiteMultiple.objects.create(
+            entreprise=entreprise,
+            ip_client=client_ip,
+            produit=p,
+            region=geo_data["region"],
+            pays=geo_data["country"],
+            ville=geo_data["city"]
+        )
         return {"status": 200, "produit": produit}
     except Exception as e:
         return HttpError(message="Erreur interne du serveur", status_code=500)
@@ -145,15 +157,18 @@ def get_monthly_stats(request):
                 ),
                 0,
             )
-            stats.append({"day": str(day), "sales": day_sales, "visits": day_visits})
+            stats.append(
+                {"day": str(day), "sales": day_sales, "visits": day_visits})
 
         return {"status": 200, "data": stats}
     except Entreprise.DoesNotExist:
         return {"status": 404, "message": "Entreprise non trouvée"}
     except Exception as e:
         return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
- 
+
 ###########
+
+
 @router.get("/yearly_stats")
 def get_yearly_stats(request):
     try:
@@ -245,6 +260,8 @@ def get_yearly_stats(request):
         return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
 
 #############
+
+
 @router.get("/sales_evolution")
 def get_sales_evolution(request):
     try:
@@ -315,6 +332,8 @@ def get_sales_evolution(request):
     except Exception as e:
         return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
 ###################
+
+
 @router.get("/top_selling_products")
 def get_top_selling_products(request):
     try:
@@ -337,7 +356,8 @@ def get_top_selling_products(request):
 
         # Préparer les données dans le format requis
         data = [
-            {"product": item["produit__nom_produit"], "sales": item["total_sales"]}
+            {"product": item["produit__nom_produit"],
+                "sales": item["total_sales"]}
             for item in top_products
         ]
 
