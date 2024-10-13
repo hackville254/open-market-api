@@ -278,7 +278,6 @@ def payOut(request, data: MySoleaPay):
                 "message": "Le montant à retirer est supérieur au solde du compte.",
             }
 
-
 @router.get("total_vente")
 def totalVente(request):
     token = request.headers.get("Authorization").split(" ")[1]
@@ -296,7 +295,7 @@ def totalVente(request):
     # Total de toutes les ventes réussies
     total_all_count = CHECKOUT.objects.filter(entreprise=e, status="Reussi").count()
     total_all_sum = CHECKOUT.objects.filter(entreprise=e, status="Reussi").aggregate(
-        total=Sum("produit__prix_produit")
+        total=Sum("prix_produit")
     )
     total_all = total_all_sum["total"] or 0
 
@@ -306,7 +305,7 @@ def totalVente(request):
     ).count()
     total_today_sum = CHECKOUT.objects.filter(
         entreprise=e, status="Reussi", date__date=today
-    ).aggregate(total=Sum("produit__prix_produit"))
+    ).aggregate(total=Sum("prix_produit"))
     total_today = total_today_sum["total"] or 0
 
     # Total des ventes réussies pour ce mois-ci
@@ -315,7 +314,7 @@ def totalVente(request):
     ).count()
     total_month_sum = CHECKOUT.objects.filter(
         entreprise=e, status="Reussi", date__date__gte=start_of_month
-    ).aggregate(total=Sum("produit__prix_produit"))
+    ).aggregate(total=Sum("prix_produit"))
     total_month = total_month_sum["total"] or 0
 
     # Total des ventes réussies pour le mois précédent
@@ -330,7 +329,7 @@ def totalVente(request):
         status="Reussi",
         date__date__gte=start_of_last_month,
         date__date__lte=end_of_last_month,
-    ).aggregate(total=Sum("produit__prix_produit"))
+    ).aggregate(total=Sum("prix_produit"))
     total_last_month = total_last_month_sum["total"] or 0
 
     # Calcul de la croissance des ventes (en pourcentage) par rapport au mois précédent

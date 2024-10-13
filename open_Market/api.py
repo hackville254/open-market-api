@@ -7,7 +7,7 @@ from produits.routers.LiensRouter import router as LiensRouter
 from produits.routers.checkoutRouter import router as checkoutRouter
 from banque.banqueRouter import router as banqueRouter
 #from produits.routers.visitesRouter import router as visiteRouter
-
+from clients.routers.authentifications import auth_router as ClientRouter
 from authentification.views import router as AuthRouter
 
 class GlobalAuth(HttpBearer):
@@ -22,6 +22,7 @@ app = NinjaAPI(
     auth=GlobalAuth(),
     #docs_url=None
 )
+app.add_router("client/",ClientRouter,tags=["Clients"])
 app.add_router("authenticate/",AuthRouter,tags=["Authentification"])
 app.add_router("/", produitRouter, tags=["PRODUIT NUMERIQUE"])
 app.add_router("/", livreRouter, tags=["LIVRE,EBOOK"])

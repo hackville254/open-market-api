@@ -1,11 +1,11 @@
 """ from ninja import Router
 from ninja.errors import HttpError
 
-from authentification.models import Entreprise
-from authentification.token import verify_token
-from datetime import datetime, timedelta
-from django.db.models import Sum
-from ..models import Produit, VisiteProduitNumerique,VisiteAcces,VisiteLivre,Acce,ProduitNumerique,Livre
+    from authentification.models import Entreprise
+    from authentification.token import verify_token
+    from datetime import datetime, timedelta
+    from django.db.models import Sum
+    from ..models import Produit, VisiteProduitNumerique,VisiteAcces,VisiteLivre,Acce,ProduitNumerique,Livre
 
 
 
