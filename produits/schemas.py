@@ -88,3 +88,12 @@ class MySoleaPay(Schema):
     customer_number : str
     amount:float
     
+    
+# Créer un modèle de données pour les données à renvoyer
+class VisiteData(Schema):
+    product: str
+    uniqueVisits: int
+    region: str
+    country: str
+    city: str
+    date: str

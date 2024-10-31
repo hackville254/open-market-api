@@ -1,87 +1,73 @@
-""" from ninja import Router
-from ninja.errors import HttpError
-
-    from authentification.models import Entreprise
-    from authentification.token import verify_token
-    from datetime import datetime, timedelta
-    from django.db.models import Sum
-    from ..models import Produit, VisiteProduitNumerique,VisiteAcces,VisiteLivre,Acce,ProduitNumerique,Livre
-
-
+from authentification.models import Entreprise
+from authentification.token import verify_token
+from produits.models import Visite, VisiteMultiple
+from produits.schemas import VisiteData
+from django.db.models import Q, F, Count
+from ninja import Router
 
 router = Router()
 
-@router.post('enregister_visite', auth=None)
-def enregister_Visite(request , id : str):
-    print(id)
-    acces = Acce.objects.filter(id = id).first()
-    livre = Livre.objects.filter(id = id).first()
-    produitnumerique = ProduitNumerique.objects.filter(id = id).first()
-    
-    # Vérifie et enregistre la visite en conséquence
-    if acces:
-        VisiteAcces.objects.create(produit=acces)
-        return {"message": "Visite d'accès enregistrée avec succès." , "status":200}
-    elif livre:
-        VisiteLivre.objects.create(produit=livre)
-        return {"message": "Visite de livre enregistrée avec succès." , "status":200}
-    elif produitnumerique:
-        VisiteProduitNumerique.objects.create(produit=produitnumerique)
-        return {"message": "Visite de produit numérique enregistrée avec succès." , "status":200}
-    else:
-        return {"message": "Produit non trouvé." , "status":404}
-
-
-
-@router.get('recupere_les_visite')
-def recupere_les_Visite(request):
+@router.get("/visites/unique")
+def get_visites(request):
+    # Vérification du token d'authentification
     token = request.headers.get("Authorization").split(" ")[1]
     payload = verify_token(token)
-    entreprise = Entreprise.objects.get(id = payload.get('entreprise_id'))
-    acces = Acce.objects.filter(entreprise = entreprise).first()
-    livre = Livre.objects.filter(entreprise = entreprise).first()
-    print(livre)
-    produitnumerique = ProduitNumerique.objects.filter(entreprise = entreprise).first()
+    entreprise_id = payload.get("entreprise_id")
 
-    
+    # Récupération de l'entreprise associée au token
+    entreprise = Entreprise.objects.get(id=entreprise_id)
 
-    # Obtenir la date actuelle et le début du mois
-    today = datetime.now().date()
-    start_of_month = today.replace(day=1)
+    # Récupération des visites pour l'entreprise
+    visites = Visite.objects.filter(entreprise=entreprise).order_by('date')
 
-    # Préparer une liste pour stocker les résultats
-    results = []
 
-    # Boucle pour chaque jour du mois
-    for day in range(1, today.day + 1):
-        current_date = start_of_month + timedelta(days=day - 1)
-        
-        # Calculer les visites pour les Livres
-        visites_livres = VisiteLivre.objects.filter(
-            produit=livre,
-            date=current_date
-        ).aggregate(total_visites=Sum('visite'))['total_visites'] or 0
+    # Regroupement des visites par produit, date, ville, région et pays
+    visites_groupées =  visites.values('produit__nom_produit', 'date', 'ville','region', 'pays').annotate(unique_visits=Count('id', distinct=True))
 
-        # Calculer les visites pour les Acces
-        visites_acces = VisiteAcces.objects.filter(
-            produit=acces,
-            date=current_date
-        ).aggregate(total_visites=Sum('visite'))['total_visites'] or 0
 
-        # Calculer les visites pour les Produits Numeriques
-        visites_numeriques = VisiteProduitNumerique.objects.filter(
-            produit=produitnumerique,
-            date=current_date
-        ).aggregate(total_visites=Sum('visite'))['total_visites'] or 0
+    # Sérialisation des données en utilisant le modèle VisiteData
+    data = []
+    for visite in visites_groupées:
+        data.append(VisiteData(
+            product=visite['produit__nom_produit'],
+            uniqueVisits=visite['unique_visits'],
+            region=visite['region'],
+            country=visite['pays'],
+            city=visite['ville'],
+            date=visite['date'].isoformat()
+        ))
 
-        # Calculer le total des visites
-        total_visites = visites_livres + visites_acces + visites_numeriques
+    return data
 
-        # Ajout des données du jour aux résultats
-        results.append({
-            "day": str(day),
-            "visits": total_visites
-        })
 
-    return results
- """
+
+
+@router.get("/visites/multiple")
+def get_visites_multiple(request):
+    # Vérification du token d'authentification
+    token = request.headers.get("Authorization").split(" ")[1]
+    payload = verify_token(token)
+    entreprise_id = payload.get("entreprise_id")
+
+    # Récupération de l'entreprise associée au token
+    entreprise = Entreprise.objects.get(id=entreprise_id)
+
+    # Récupération des visites pour l'entreprise, regroupées par produit, ville, région, pays et date
+    visites = VisiteMultiple.objects.filter(entreprise=entreprise) \
+       .values('produit__nom_produit', 'produit', 'ville','region', 'pays', 'date__date') \
+       .annotate(multiple_visits=Count('id')) \
+       .order_by('date__date')
+
+    # Sérialisation des données en utilisant le modèle VisiteData
+    data = []
+    for visite in visites:
+        data.append(VisiteData(
+            product=visite['produit__nom_produit'],
+            uniqueVisits=visite['multiple_visits'],
+            region=visite['region'],
+            country=visite['pays'],
+            city=visite['ville'],
+            date=visite['date__date'].isoformat()
+        ))
+
+    return data

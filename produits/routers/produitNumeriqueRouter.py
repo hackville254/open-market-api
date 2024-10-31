@@ -152,7 +152,7 @@ def get_monthly_stats(request):
 
         # Calculer les statistiques de ventes par jour
         sales_stats = sales.values("date__date").annotate(
-            sum=Sum("produit__prix_produit")
+            sum=Sum("prix_produit")
         )  # Utilisation de 'produit__prix_produit'
 
         # Préparer les données pour chaque jour du mois jusqu'à aujourd'hui
@@ -219,7 +219,7 @@ def get_yearly_stats(request):
         sales_stats = (
             sales.annotate(month=TruncMonth("date"))
             .values("month")
-            .annotate(sum=Sum("produit__prix_produit"))
+            .annotate(sum=Sum("prix_produit"))
             .values("month", "sum")
         )
 
@@ -301,7 +301,7 @@ def get_sales_evolution(request):
         sales_stats = (
             sales.annotate(month=TruncMonth("date"))
             .values("month")
-            .annotate(sum=Sum("produit__prix_produit"))
+            .annotate(sum=Sum("prix_produit"))
             .values("month", "sum")
         )
 
@@ -361,7 +361,7 @@ def get_top_selling_products(request):
         product_sales = (
             CHECKOUT.objects.filter(entreprise=entreprise, status="Reussi")
             .values("produit__nom_produit")
-            .annotate(total_sales=Sum("produit__prix_produit"))
+            .annotate(total_sales=Sum("prix_produit"))
             .order_by("-total_sales")
         )
 

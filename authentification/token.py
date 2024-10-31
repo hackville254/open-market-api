@@ -1,4 +1,4 @@
-import jwt
+import jwt  
 from datetime import datetime, timedelta, timezone
 from ninja.errors import HttpError
 from django.contrib.auth.models import User
