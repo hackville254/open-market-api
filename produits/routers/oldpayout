@@ -1,0 +1,86 @@
+
+@router.post("payOut")
+def payOut(request, data: MySoleaPay):
+    token = request.headers.get("Authorization").split(" ")[1]
+    payload = verify_token(token)
+    e = Entreprise.objects.get(id=payload.get("entreprise_id"))
+    compte = CompteBancaire.objects.get(entreprise=e)
+    amount = data.amount
+    solde = compte.solde
+    is_look = compte.bloque
+    print(data)
+    print("amount", amount)
+    if amount < 1000:
+        return {"status": 403, "message": "Le montant minimum à retirer est de 1000."}
+    if is_look:
+        return {
+            "status": 403,
+            "message": "Votre compte est bloqué. Contactez le service client.",
+        }
+    print("somme du compte , = ", compte.solde)
+    if solde > 1000 and amount <= solde:
+        if data.operator in [1, 2]:
+            devise = "XAF"
+        else:
+            devise = "XOF"
+        print(devise)
+        compte.solde -= float(amount)
+        compte.save()
+
+        url = f"{BASE_URL}action/auth"
+        payload = {
+            "public_apikey": config("X-API-KEY"),
+            "private_secretkey": config("PRIVATE_SECRET_KEY"),
+        }
+
+        response = requests.request("POST", url, json=payload)
+
+        response_data = json.loads(response.text)
+        if "access_token" in response_data:
+            url = "https://soleaspay.com/api/action/account/withdraw"
+
+            headers = {
+                "operation": "4",
+                "service": str(data.operator),
+                "Authorization": "Bearer " + response_data["access_token"],
+                "Content-Type": "application/json",
+            }
+            data = {
+                "amount": float(data.amount),
+                "wallet": data.customer_number,
+                "currency": str(devise),
+            }
+
+            response = requests.post(url, headers=headers, data=json.dumps(data))
+            Retrait.objects.create(compte=compte, montant=amount)
+            result = response.json()
+            print(result)
+            if result.get("code") == 200:
+                return {
+                    "status": result.get("code"),
+                    "message": str(amount)
+                    + " "
+                    + devise
+                    + " ont été retirés de votre compte. Merci de faire confiance à Open Market.",
+                }
+            else:
+                return {
+                    "status": result.get("code"),
+                    "message": result.get("message", "Erreur lors du retrait."),
+                }
+        else:
+            return {
+                "status": 401,
+                "message": "Échec de l'authentification avec le service externe.",
+            }
+    else:
+        if solde <= 1000:
+            return {
+                "status": 403,
+                "message": "Votre solde doit être supérieur à 1000 pour cette opération.",
+            }
+        elif amount > solde:
+            return {
+                "status": 403,
+                "message": "Le montant à retirer est supérieur au solde du compte.",
+            }
