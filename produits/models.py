@@ -120,3 +120,4 @@ class CHECKOUT(models.Model):
     date_modification = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.entreprise.nom_entreprise
+

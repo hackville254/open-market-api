@@ -118,6 +118,7 @@ INSTALLED_APPS = [
     'django_quill',
     'minio_storage',
     'clients',
+    'marketing',
 ]
 
 

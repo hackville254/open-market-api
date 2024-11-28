@@ -233,8 +233,6 @@ def getEntreprise(request):
 @router.get('token')
 def getToken(request):
     try:
-        print(request.headers)
-        print('------------------------------------------')
         token = request.headers.get("Authorization").split(" ")[1]
         payload = verify_token(token)
         return 200

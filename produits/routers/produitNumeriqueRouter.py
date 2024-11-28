@@ -85,8 +85,8 @@ def get_by_slug_by(request, slug: str):
         produit[0]['image_presentation'] = p.image_presentation.url
         entreprise = Entreprise.objects.get(nom_entreprise=p.entreprise)
         today = datetime.now().date()  # Obtient la date actuelle
-        print(produit)
-        
+        #print(produit)
+        print('Produit get')
         # Enregistre la visite uniquement si l'adresse IP est présente
         if client_ip and not Visite.objects.filter(
             entreprise=entreprise, ip_client=client_ip, produit=p, date__date=today
