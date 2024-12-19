@@ -26,7 +26,7 @@ class CompteBancaire(models.Model):
 
 class Retrait(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    compte = models.ForeignKey(CompteBancaire, on_delete=models.CASCADE)
+    compte = models.ForeignKey(CompteBancaire, on_delete=models.CASCADE , null=True)
     montant = models.FloatField(default=0)
     date = models.DateTimeField(auto_now_add=True)
 
@@ -37,7 +37,7 @@ class Retrait(models.Model):
 
 class Transaction(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)    
+    user = models.ForeignKey(User, on_delete=models.CASCADE , null=True)    
     montant = models.FloatField()
     compte_destination = models.ForeignKey(
         CompteBancaire,
@@ -46,7 +46,7 @@ class Transaction(models.Model):
         null=True,
     )
     compte_source = models.ForeignKey(
-        CompteBancaire, related_name="transactions_source", on_delete=models.CASCADE
+        CompteBancaire, related_name="transactions_source", on_delete=models.CASCADE , null=True
     )
     date = models.DateTimeField(auto_now_add=True)
 

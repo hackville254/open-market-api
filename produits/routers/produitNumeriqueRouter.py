@@ -1,14 +1,16 @@
+from django.conf import settings
 from django.db.models.functions import TruncMonth
 import json
 from ninja import Router, UploadedFile, Form, File
 from typing import List
 from ninja.errors import HttpError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from django.db.models import Count, Sum
 from authentification.models import Entreprise
 from authentification.token import verify_token
-from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, CHECKOUT , Visite
+from ..models import Acce, Fichier, Livre, ProduitNumerique, Produit, CHECKOUT, Visite, VisiteMultiple
 from ..schemas import (
+    ErrorResponse,
     ModifyProduitDigitalSCHEMA,
     ProduitNumeriqueSchema,
     LivreSchema,
@@ -49,7 +51,7 @@ def recuperer_tout_les_produits_une_entrepise(request):
     return JsonResponse(lists_produits, safe=False)
 
 
-#######GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG
+# GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG
 @router.get("getby/{slug}")
 def get_by_slug(request, slug: str):
     try:
@@ -61,39 +63,63 @@ def get_by_slug(request, slug: str):
         return HttpError(message="Erreur interne du serveur", status_code=500)
 
 
-#######GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG POUR LE CHECKOUT
+# GET BY SLUG RECUPERE UN PRODUIT VIA SON SLUG POUR LE CHECKOUT
+
+
 @router.get("getby/{slug}/user", auth=None)
 def get_by_slug_by(request, slug: str):
     try:
-        client_ip = get_client_ip(request)
-        geo_data = get_geo_data(client_ip)
-        print(geo_data)
-        token = request.headers
-        produit = list(Produit.objects.filter(slug=slug , is_visible = True , supprime = False).values())
+        print('----------------------------')
+        # Récupère l'adresse IP du client uniquement si DEBUG est désactivé
+        if not settings.DEBUG:
+            client_ip = get_client_ip(request)
+            geo_data = get_geo_data(client_ip)
+            print(geo_data)
+        else:
+            client_ip = None
+            geo_data = None
+
+        produit = list(Produit.objects.filter(
+            slug=slug, is_visible=True, supprime=False).values())
         p = Produit.objects.get(slug=slug)
         produit[0]['image_presentation'] = p.image_presentation.url
-        entreprise = Entreprise.objects.get(nom_entreprise = p.entreprise)
-        # Vérifiez si une visite avec la même IP existe déjà pour l'entreprise
-        if not Visite.objects.filter(
-           entreprise=entreprise, ip_client=client_ip , produit = p
+        entreprise = Entreprise.objects.get(nom_entreprise=p.entreprise)
+        today = datetime.now().date()  # Obtient la date actuelle
+        # print(produit)
+        print('Produit get')
+        # Enregistre la visite uniquement si l'adresse IP est présente
+        if client_ip and not Visite.objects.filter(
+            entreprise=entreprise, ip_client=client_ip, produit=p, date__date=today
         ).exists():
-          Visite.objects.create(
-               entreprise=entreprise,
-              ip_client=client_ip,
-               produit=p,
-              region=geo_data["region"],
-               pays=geo_data["country"],
-              ville=geo_data["city"],
-           )
+            Visite.objects.create(
+                entreprise=entreprise,
+                ip_client=client_ip,
+                produit=p,
+                region=geo_data["region"] if geo_data else None,
+                pays=geo_data["country"] if geo_data else None,
+                ville=geo_data["city"] if geo_data else None,
+            )
+
+        # Enregistre toutes les visites si l'adresse IP est présente
+        if client_ip:
+            VisiteMultiple.objects.create(
+                entreprise=entreprise,
+                ip_client=client_ip,
+                produit=p,
+                region=geo_data["region"] if geo_data else None,
+                pays=geo_data["country"] if geo_data else None,
+                ville=geo_data["city"] if geo_data else None
+            )
         return {"status": 200, "produit": produit}
     except Exception as e:
-        return HttpError(message="Erreur interne du serveur", status_code=500)
-
-
+        # Renvoyer une réponse JSON en cas d'erreur
+        return ErrorResponse(message="Erreur interne du serveur", status_code=500)
 # VISITE
 ##############
 ###########
 ######
+
+
 @router.get("/monthly_stats")
 def get_monthly_stats(request):
     try:
@@ -126,7 +152,7 @@ def get_monthly_stats(request):
 
         # Calculer les statistiques de ventes par jour
         sales_stats = sales.values("date__date").annotate(
-            sum=Sum("produit__prix_produit")
+            sum=Sum("prix_produit")
         )  # Utilisation de 'produit__prix_produit'
 
         # Préparer les données pour chaque jour du mois jusqu'à aujourd'hui
@@ -145,15 +171,18 @@ def get_monthly_stats(request):
                 ),
                 0,
             )
-            stats.append({"day": str(day), "sales": day_sales, "visits": day_visits})
+            stats.append(
+                {"day": str(day), "sales": day_sales, "visits": day_visits})
 
         return {"status": 200, "data": stats}
     except Entreprise.DoesNotExist:
         return {"status": 404, "message": "Entreprise non trouvée"}
     except Exception as e:
         return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
- 
+
 ###########
+
+
 @router.get("/yearly_stats")
 def get_yearly_stats(request):
     try:
@@ -190,7 +219,7 @@ def get_yearly_stats(request):
         sales_stats = (
             sales.annotate(month=TruncMonth("date"))
             .values("month")
-            .annotate(sum=Sum("produit__prix_produit"))
+            .annotate(sum=Sum("prix_produit"))
             .values("month", "sum")
         )
 
@@ -245,6 +274,8 @@ def get_yearly_stats(request):
         return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
 
 #############
+
+
 @router.get("/sales_evolution")
 def get_sales_evolution(request):
     try:
@@ -270,7 +301,7 @@ def get_sales_evolution(request):
         sales_stats = (
             sales.annotate(month=TruncMonth("date"))
             .values("month")
-            .annotate(sum=Sum("produit__prix_produit"))
+            .annotate(sum=Sum("prix_produit"))
             .values("month", "sum")
         )
 
@@ -315,6 +346,8 @@ def get_sales_evolution(request):
     except Exception as e:
         return {"status": 500, "message": f"Erreur interne du serveur: {str(e)}"}
 ###################
+
+
 @router.get("/top_selling_products")
 def get_top_selling_products(request):
     try:
@@ -328,7 +361,7 @@ def get_top_selling_products(request):
         product_sales = (
             CHECKOUT.objects.filter(entreprise=entreprise, status="Reussi")
             .values("produit__nom_produit")
-            .annotate(total_sales=Sum("produit__prix_produit"))
+            .annotate(total_sales=Sum("prix_produit"))
             .order_by("-total_sales")
         )
 
@@ -337,7 +370,8 @@ def get_top_selling_products(request):
 
         # Préparer les données dans le format requis
         data = [
-            {"product": item["produit__nom_produit"], "sales": item["total_sales"]}
+            {"product": item["produit__nom_produit"],
+                "sales": item["total_sales"]}
             for item in top_products
         ]
 
@@ -354,6 +388,8 @@ def get_top_selling_products(request):
 ############
 
 # Ajouter produit numerique
+MAX_FILE_SIZE_MB = 4  # Taille maximale en Mo
+
 
 @router.post("produit_numerique")
 def ajouter_produit_numerique(
@@ -389,6 +425,12 @@ def ajouter_produit_numerique(
     )
     if fichiers:
         for f in fichiers:
+            # Vérifier la taille du fichier (en octets)
+            if f.size > MAX_FILE_SIZE_MB * 1048576:  # Convertir 4 Mo en octets
+                # Lever une erreur personnalisée avec HttpError si la taille est trop grande
+                raise HttpError(
+                    400, f"Le fichier {f.filename} dépasse la taille maximale de {MAX_FILE_SIZE_MB} Mo.")
+
             print(f)
             produit.taille_Fichier = round(f.size / 1048576, 2)  # Mo
             produit.save()

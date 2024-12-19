@@ -64,6 +64,11 @@ class ModifyAcces(Schema):
     delais: Optional[str]
     # Ajoutez d'autres champs selon vos besoins
 
+
+class ErrorResponse(BaseModel):
+    message: str
+    status_code: int
+
 class CHECKOUTSchema(Schema):
     nom_client : str
     devise_client: str
@@ -83,3 +88,12 @@ class MySoleaPay(Schema):
     customer_number : str
     amount:float
     
+    
+# Créer un modèle de données pour les données à renvoyer
+class VisiteData(Schema):
+    product: str
+    uniqueVisits: int
+    region: str
+    country: str
+    city: str
+    date: str

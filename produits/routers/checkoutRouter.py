@@ -50,6 +50,8 @@ def checkout_produit(request, entreprise_slug: str, slug: str, data: CHECKOUTSch
     produit = Produit.objects.get(slug=slug)
     checkout = CHECKOUT.objects.create(
         produit=produit,
+        prix_produit = produit.prix_produit,
+        prix_client = data.montant,
         entreprise=entreprise,
         nom_client=data.nom_client,
         devise_client=data.devise_client,
@@ -192,89 +194,112 @@ def callbackPayin(request):
 
 @router.post("payOut")
 def payOut(request, data: MySoleaPay):
-    token = request.headers.get("Authorization").split(" ")[1]
-    payload = verify_token(token)
-    e = Entreprise.objects.get(id=payload.get("entreprise_id"))
-    compte = CompteBancaire.objects.get(entreprise=e)
-    amount = data.amount
-    solde = compte.solde
-    is_look = compte.bloque
-    print(data)
-    print("amount", amount)
-    if amount < 1000:
-        return {"status": 403, "message": "Le montant minimum à retirer est de 1000."}
-    if is_look:
-        return {
-            "status": 403,
-            "message": "Votre compte est bloqué. Contactez le service client.",
-        }
-    print("somme du compte , = ", compte.solde)
-    if solde > 1000 and amount <= solde:
-        if data.operator in [1, 2]:
-            devise = "XAF"
-        else:
-            devise = "XOF"
-        print(devise)
-        compte.solde -= float(amount)
-        compte.save()
-        Retrait.objects.create(compte=compte, montant=amount)
+    try:
+        # Vérifier et extraire le token de l'en-tête d'autorisation
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or " " not in auth_header:
+            return {"status": 401, "message": "Token d'authentification manquant ou invalide."}
+        token = auth_header.split(" ")[1]
+        
+        # Vérification du token et récupération de l'entreprise
+        payload = verify_token(token)
+        entreprise_id = payload.get("entreprise_id")
+        if not entreprise_id:
+            return {"status": 401, "message": "Identifiant de l'entreprise manquant dans le token."}
+        
+        e = Entreprise.objects.filter(id=entreprise_id).first()
+        if not e:
+            return {"status": 404, "message": "Entreprise introuvable."}
+        
+        # Récupérer le compte bancaire associé à l'entreprise
+        compte = CompteBancaire.objects.filter(entreprise=e).first()
+        if not compte:
+            return {"status": 404, "message": "Compte bancaire introuvable pour cette entreprise."}
 
-        url = f"{BASE_URL}action/auth"
-        payload = {
-            "public_apikey": config("X-API-KEY"),
-            "private_secretkey": config("PRIVATE_SECRET_KEY"),
-        }
-
-        response = requests.request("POST", url, json=payload)
-
-        response_data = json.loads(response.text)
-        if "access_token" in response_data:
-            url = "https://soleaspay.com/api/action/account/withdraw"
-
-            headers = {
-                "operation": "4",
-                "service": str(data.operator),
-                "Authorization": "Bearer " + response_data["access_token"],
-                "Content-Type": "application/json",
-            }
-            data = {
-                "amount": float(data.amount),
-                "wallet": data.customer_number,
-                "currency": str(devise),
-            }
-
-            response = requests.post(url, headers=headers, data=json.dumps(data))
-            result = response.json()
-            print(result)
-            if result.get("code") == 200:
-                return {
-                    "status": result.get("code"),
-                    "message": str(amount)
-                    + " "
-                    + devise
-                    + " ont été retirés de votre compte. Merci de faire confiance à Open Market.",
-                }
-            else:
-                return {
-                    "status": result.get("code"),
-                    "message": result.get("message", "Erreur lors du retrait."),
-                }
-        else:
+        # Vérifications initiales sur le montant et l'état du compte
+        amount = data.amount
+        if amount < 1000:
+            return {"status": 403, "message": "Le montant minimum à retirer est de 1000."}
+        
+        if compte.bloque:
             return {
-                "status": 401,
-                "message": "Échec de l'authentification avec le service externe.",
+                "status": 403,
+                "message": "Votre compte est bloqué. Contactez le service client.",
             }
-    else:
-        if solde <= 1000:
+        
+        if compte.solde < 1000:
             return {
                 "status": 403,
                 "message": "Votre solde doit être supérieur à 1000 pour cette opération.",
             }
-        elif amount > solde:
+
+        if amount > compte.solde:
             return {
                 "status": 403,
                 "message": "Le montant à retirer est supérieur au solde du compte.",
             }
+        
+        # Déterminer la devise en fonction de l'opérateur
+        devise = "XAF" if data.operator in [1, 2] else "XOF"
+        
+        # Déduire le montant du solde et sauvegarder
+        compte.solde -= amount
+        compte.save()
+
+        # Authentification auprès de l'API externe
+        auth_url = f"{BASE_URL}action/auth"
+        auth_payload = {
+            "public_apikey": config("X-API-KEY"),
+            "private_secretkey": config("PRIVATE_SECRET_KEY"),
+        }
+        auth_response = requests.post(auth_url, json=auth_payload)
+        
+        auth_data = auth_response.json()
+        access_token = auth_data.get("access_token")
+        if not access_token:
+            return {
+                "status": 401,
+                "message": "Échec de l'authentification avec le service externe.",
+            }
+        
+        # Effectuer le retrait via l'API externe
+        withdraw_url = "https://soleaspay.com/api/action/account/withdraw"
+        headers = {
+            "operation": "4",
+            "service": str(data.operator),
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        }
+        withdraw_data = {
+            "amount": amount,
+            "wallet": data.customer_number,
+            "currency": devise,
+        }
+        
+        withdraw_response = requests.post(withdraw_url, headers=headers, data=json.dumps(withdraw_data))
+        result = withdraw_response.json()
+        
+        # Sauvegarder le retrait et retourner le message de confirmation
+        Retrait.objects.create(compte=compte, montant=amount)
+        
+        if result.get("code") == 200:
+            return {
+                "status": 200,
+                "message": f"{amount} {devise} ont été retirés de votre compte. Merci de faire confiance à Open Market.",
+            }
+        else:
+            return {
+                "status": result.get("code", 400),
+                "message": result.get("message", "Erreur lors du retrait."),
+            }
+
+    except Exception as e:
+        return {
+            "status": 500,
+            "message": "Une erreur est survenue lors du traitement de la demande.",
+            "error": str(e),
+        }
+
 
 
 @router.get("total_vente")
@@ -294,7 +319,7 @@ def totalVente(request):
     # Total de toutes les ventes réussies
     total_all_count = CHECKOUT.objects.filter(entreprise=e, status="Reussi").count()
     total_all_sum = CHECKOUT.objects.filter(entreprise=e, status="Reussi").aggregate(
-        total=Sum("produit__prix_produit")
+        total=Sum("prix_produit")
     )
     total_all = total_all_sum["total"] or 0
 
@@ -304,7 +329,7 @@ def totalVente(request):
     ).count()
     total_today_sum = CHECKOUT.objects.filter(
         entreprise=e, status="Reussi", date__date=today
-    ).aggregate(total=Sum("produit__prix_produit"))
+    ).aggregate(total=Sum("prix_produit"))
     total_today = total_today_sum["total"] or 0
 
     # Total des ventes réussies pour ce mois-ci
@@ -313,7 +338,7 @@ def totalVente(request):
     ).count()
     total_month_sum = CHECKOUT.objects.filter(
         entreprise=e, status="Reussi", date__date__gte=start_of_month
-    ).aggregate(total=Sum("produit__prix_produit"))
+    ).aggregate(total=Sum("prix_produit"))
     total_month = total_month_sum["total"] or 0
 
     # Total des ventes réussies pour le mois précédent
@@ -328,7 +353,7 @@ def totalVente(request):
         status="Reussi",
         date__date__gte=start_of_last_month,
         date__date__lte=end_of_last_month,
-    ).aggregate(total=Sum("produit__prix_produit"))
+    ).aggregate(total=Sum("prix_produit"))
     total_last_month = total_last_month_sum["total"] or 0
 
     # Calcul de la croissance des ventes (en pourcentage) par rapport au mois précédent

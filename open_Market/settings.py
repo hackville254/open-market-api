@@ -32,11 +32,15 @@ TEMPLATE_DIR = BASE_DIR/'templates'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
+
 if DEBUG:
     ALLOWED_HOSTS = ['*']
     SECRET_KEY = 'django-insecure-6z7e%usrv(-r_t3+#*f30=ziw+*1=i0m^6_pyp_h7#8^tb=w)h'
     CORS_ALLOW_ALL_ORIGINS = True
-    CORS_ALLOWED_ORIGINS = ["http://*",]
+    CORS_ALLOWED_ORIGINS = ["http://*","https://*","http://localhost:5173"]
+    #SESSION_COOKIE_HTTPONLY = True
+    #CSRF_COOKIE_HTTPONLY = True
+
 #     DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
@@ -57,13 +61,26 @@ else:
     ALLOWED_HOSTS = ['https://opm-api-api.agocze.easypanel.host','opm-api-api.agocze.easypanel.host', 'mysoleas.com' , 'https://mysoleas.com']
     CORS_ALLOWED_ORIGINS = ["https://business.op-markets.com","https://op-markets.com","https://shop.op-markets.com","https://mysoleas.com"]
     SECRET_KEY = config('SECRET_KEY')
+    
+    # Configuration de l'en-tête SSL proxy sécurisé pour HTTPS.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_HSTS_SECONDS = 3600  # Set the desired value in seconds
+    
+    # Paramètres HTTP Strict Transport Security (HSTS).
+    SECURE_HSTS_SECONDS = 3600  # Durée en secondes pour appliquer des connexions HTTPS.
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # Inclut les sous-domaines dans HSTS.
+    SECURE_HSTS_PRELOAD = True  # Indique que le domaine doit être inclus dans la liste de préchargement HSTS.
+    
+    # Redirige toutes les connexions HTTP vers HTTPS.
     SECURE_SSL_REDIRECT = True
+    
+    # Définit les cookies de session comme sécurisés, uniquement transmis sur HTTPS.
     SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True  # Définit HttpOnly pour les cookies de session.
+    
+    # Définit les cookies CSRF comme sécurisés et HttpOnly, uniquement transmis sur HTTPS.
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True 
+    CSRF_COOKIE_HTTPONLY = True  # Définit HttpOnly pour les cookies CSRF.
+    
     DATABASES = {
     'default': {
         'ENGINE': config('DATABASE_ENGINE'),
@@ -100,6 +117,8 @@ INSTALLED_APPS = [
     'banque',
     'django_quill',
     'minio_storage',
+    'clients',
+    'marketing',
 ]
 
 
