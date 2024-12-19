@@ -78,14 +78,14 @@ def get_by_slug_by(request, slug: str):
         else:
             client_ip = None
             geo_data = None
-        
+
         produit = list(Produit.objects.filter(
             slug=slug, is_visible=True, supprime=False).values())
         p = Produit.objects.get(slug=slug)
         produit[0]['image_presentation'] = p.image_presentation.url
         entreprise = Entreprise.objects.get(nom_entreprise=p.entreprise)
         today = datetime.now().date()  # Obtient la date actuelle
-        #print(produit)
+        # print(produit)
         print('Produit get')
         # Enregistre la visite uniquement si l'adresse IP est présente
         if client_ip and not Visite.objects.filter(
@@ -99,7 +99,7 @@ def get_by_slug_by(request, slug: str):
                 pays=geo_data["country"] if geo_data else None,
                 ville=geo_data["city"] if geo_data else None,
             )
-            
+
         # Enregistre toutes les visites si l'adresse IP est présente
         if client_ip:
             VisiteMultiple.objects.create(
@@ -388,6 +388,8 @@ def get_top_selling_products(request):
 ############
 
 # Ajouter produit numerique
+MAX_FILE_SIZE_MB = 4  # Taille maximale en Mo
+
 
 @router.post("produit_numerique")
 def ajouter_produit_numerique(
@@ -423,6 +425,12 @@ def ajouter_produit_numerique(
     )
     if fichiers:
         for f in fichiers:
+            # Vérifier la taille du fichier (en octets)
+            if f.size > MAX_FILE_SIZE_MB * 1048576:  # Convertir 4 Mo en octets
+                # Lever une erreur personnalisée avec HttpError si la taille est trop grande
+                raise HttpError(
+                    400, f"Le fichier {f.filename} dépasse la taille maximale de {MAX_FILE_SIZE_MB} Mo.")
+
             print(f)
             produit.taille_Fichier = round(f.size / 1048576, 2)  # Mo
             produit.save()

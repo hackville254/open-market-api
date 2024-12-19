@@ -22,4 +22,5 @@ COPY . /openmarket/
 EXPOSE 8059
 
 # Commande pour démarrer l'application Django
-CMD ["gunicorn", "--bind", "0.0.0.0:8059", "open_Market.wsgi:application"]
+#CMD ["gunicorn", "--bind", "0.0.0.0:8059", "open_Market.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8059", "--workers", "2", "--timeout", "60", "open_Market.wsgi:application"]
